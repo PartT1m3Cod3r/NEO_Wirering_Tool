@@ -880,16 +880,47 @@ export const SystemWiring = () => {
 
   // Export Wiring Schedule as CSV
   const handleExportCSV = () => {
-    // Pin to label mapping with function descriptions
-    const pinLabels = {
-      1: { color: 'White', label: 'VCC+ (Solar/Supply)' },
-      2: { color: 'Brown', label: 'GND' },
-      3: { color: 'Green', label: 'Sensor Power Out (Vout+)' },
-      4: { color: 'Yellow', label: 'Sensor GND' },
-      5: { color: 'Grey', label: 'Input 4 / Output 1 (A1) / D1' },
-      6: { color: 'Pink', label: 'Input 3 / Output 2 (A2) / D0 / Pulse 1' },
-      7: { color: 'Blue', label: 'Input 2 / Output 3 (A3) / SDI-12 Data' },
-      8: { color: 'Red', label: 'Input 1 / Output 4 (A4)' },
+    // Context-aware pin label generator
+    const getPinLabel = (pin, device) => {
+      const colorNames = { 1: 'White', 2: 'Brown', 3: 'Green', 4: 'Yellow', 5: 'Grey', 6: 'Pink', 7: 'Blue', 8: 'Red' };
+      const color = colorNames[pin] || 'Unknown';
+      
+      // Power pins (3, 4) - same for all
+      if (pin === 3) return `Pin ${pin} ${color} - Sensor Power Out (Vout+)`;
+      if (pin === 4) return `Pin ${pin} ${color} - Sensor GND`;
+      
+      // Solar pins (1, 2) - only for power-input
+      if (pin === 1) return `Pin ${pin} ${color} - VCC+ (Solar/Supply)`;
+      if (pin === 2) return `Pin ${pin} ${color} - GND`;
+      
+      // Signal pins (5-8) - context dependent
+      if (device.plugType === 'inputs') {
+        // Inputs plug: Analog inputs
+        const inputMap = { 5: 'Input 4', 6: 'Input 3', 7: 'Input 2', 8: 'Input 1' };
+        return `Pin ${pin} ${color} - ${inputMap[pin] || 'Signal'}`;
+      } else if (device.plugType === 'outputs') {
+        // Outputs plug: Relay outputs
+        const outputMap = { 5: 'Output 1 (A1)', 6: 'Output 2 (A2)', 7: 'Output 3 (A3)', 8: 'Output 4 (A4)' };
+        return `Pin ${pin} ${color} - ${outputMap[pin] || 'Output'}`;
+      } else if (device.plugType === 'communications') {
+        // Communications plug: Digital I/O
+        if (device.type === 'rs485') {
+          if (pin === 3) return `Pin ${pin} ${color} - RS485 B`;
+          if (pin === 4) return `Pin ${pin} ${color} - RS485 A`;
+        } else if (device.type === 'wiegand') {
+          if (pin === 5) return `Pin ${pin} ${color} - Wiegand D1`;
+          if (pin === 6) return `Pin ${pin} ${color} - Wiegand D0`;
+        } else if (device.type === 'sdi12') {
+          if (pin === 7) return `Pin ${pin} ${color} - SDI-12 Data`;
+          if (pin === 8) return `Pin ${pin} ${color} - GND`;
+        } else if (device.type === 'pulse') {
+          if (pin === 5) return `Pin ${pin} ${color} - Digital Input 2`;
+          if (pin === 6) return `Pin ${pin} ${color} - Digital Input 1`;
+        }
+        return `Pin ${pin} ${color} - Signal`;
+      }
+      
+      return `Pin ${pin} ${color}`;
     };
 
     // Header
@@ -912,10 +943,7 @@ export const SystemWiring = () => {
       }
       
       pinsToShow.forEach(pin => {
-        const pinInfo = pinLabels[pin];
-        if (pinInfo) {
-          connectionStrings.push(`Pin ${pin} ${pinInfo.color} - ${pinInfo.label}`);
-        }
+        connectionStrings.push(getPinLabel(pin, device));
       });
 
       const connections = connectionStrings.join("; ");
