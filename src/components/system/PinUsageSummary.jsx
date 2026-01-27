@@ -7,32 +7,41 @@ export const PinUsageSummary = ({ connectedDevices, pinConflicts }) => {
       plugType: device.plugType,
       signalPins: [],
       powerPins: [],
-      all: []
+      solarPins: [1, 2], // Pins 1, 2 - Solar/Power supply (always used)
+      all: [1, 2] // Always include solar pins 1 (white) and 2 (brown)
     };
 
     if (device.plugType === 'inputs') {
-      const channelPins = {
-        1: { signal: [8], power: [3, 4] },
-        2: { signal: [7], power: [3, 4] },
-        3: { signal: [6], power: [3, 4] },
-        4: { signal: [5], power: [3, 4] }
-      };
-      const channel = channelPins[device.channel];
-      if (channel) {
-        pins.signalPins.push(...channel.signal);
-        pins.powerPins.push(...channel.power);
-        pins.all.push(...channel.signal, ...channel.power);
+      if (device.type === 'power-input') {
+        // Power input only uses pins 1 and 2
+        // Solar pins 1,2 already in all
+      } else {
+        const channelPins = {
+          1: { signal: [8], power: [3, 4] },
+          2: { signal: [7], power: [3, 4] },
+          3: { signal: [6], power: [3, 4] },
+          4: { signal: [5], power: [3, 4] }
+        };
+        const channel = channelPins[device.channel];
+        if (channel) {
+          pins.signalPins.push(...channel.signal);
+          pins.powerPins.push(...channel.power);
+          pins.all.push(...channel.signal, ...channel.power); // Solar pins 1,2 already in all
+        }
       }
     } else if (device.plugType === 'outputs') {
-      if (device.type === 'latching') {
+      if (device.type === 'power-input') {
+        // Power input only uses pins 1 and 2
+        // Solar pins 1,2 already in all
+      } else if (device.type === 'latching') {
         if (device.output === 1) {
           pins.signalPins.push(5, 6);
           pins.powerPins.push(4);
-          pins.all.push(5, 6, 4);
+          pins.all.push(5, 6, 4); // Solar pins 1,2 already in all
         } else if (device.output === 3) {
           pins.signalPins.push(7, 8);
           pins.powerPins.push(4);
-          pins.all.push(7, 8, 4);
+          pins.all.push(7, 8, 4); // Solar pins 1,2 already in all
         }
       } else {
         const outputPins = {
@@ -45,24 +54,27 @@ export const PinUsageSummary = ({ connectedDevices, pinConflicts }) => {
         if (output) {
           pins.signalPins.push(...output.signal);
           pins.powerPins.push(...output.power);
-          pins.all.push(...output.signal, ...output.power);
+          pins.all.push(...output.signal, ...output.power); // Solar pins 1,2 already in all
         }
       }
     } else if (device.plugType === 'communications') {
-      if (device.type === 'rs485') {
+      if (device.type === 'power-input') {
+        // Power input only uses pins 1 and 2
+        // Solar pins 1,2 already in all
+      } else if (device.type === 'rs485') {
         pins.signalPins.push(3, 4);
-        pins.all.push(3, 4);
+        pins.all.push(3, 4); // Solar pins 1,2 already in all
       } else if (device.type === 'wiegand') {
         pins.signalPins.push(6, 5);
-        pins.all.push(6, 5);
+        pins.all.push(6, 5); // Solar pins 1,2 already in all
       } else if (device.type === 'sdi12') {
         pins.signalPins.push(7, 8);
-        pins.all.push(7, 8);
+        pins.all.push(7, 8); // Solar pins 1,2 already in all
       } else if (device.type === 'pulse') {
         const inputNum = device.input || 1;
         pins.signalPins.push(inputNum === 1 ? 6 : 5);
         pins.powerPins.push(3, 4);
-        pins.all.push(3, 4, inputNum === 1 ? 6 : 5);
+        pins.all.push(3, 4, inputNum === 1 ? 6 : 5); // Solar pins 1,2 already in all
       }
     }
 
@@ -133,11 +145,12 @@ export const PinUsageSummary = ({ connectedDevices, pinConflicts }) => {
           const pinInfo = pinColors[pinNum];
           const hasConflict = isPinConflict(pinNum, plugType);
           const isPowerPin = pinNum === 3 || pinNum === 4;
+          const isSolarPin = pinNum === 1 || pinNum === 2;
 
           return (
             <div
               key={pin}
-              className={`pin-item ${hasConflict ? 'conflict' : ''} ${isPowerPin ? 'power-pin' : ''}`}
+              className={`pin-item ${hasConflict ? 'conflict' : ''} ${isPowerPin ? 'power-pin' : ''} ${isSolarPin ? 'solar-pin' : ''}`}
             >
               <div
                 className="pin-indicator"
@@ -148,6 +161,7 @@ export const PinUsageSummary = ({ connectedDevices, pinConflicts }) => {
                 <span className="pin-color-name">{pinInfo?.name}</span>
                 <span className="pin-device-count">
                   {devices.length} device{devices.length !== 1 ? 's' : ''}
+                  {isSolarPin && ' (solar)'}
                   {isPowerPin && ' (shared)'}
                 </span>
               </div>

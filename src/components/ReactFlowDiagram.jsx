@@ -51,7 +51,53 @@ export const ReactFlowDiagram = ({ plugType, typeData, outputNumber, channelNumb
       // Add external device node
       let deviceNode = null;
 
-      if (plugType === 'outputs') {
+      if (typeData.value === 'power-input') {
+        // Power input - simple two-wire connection (arrows point INTO neo)
+        neoNode.data.outputs = []; // Neo is the target, so no outputs needed
+
+        deviceNode = {
+          id: 'device',
+          type: 'sensor',
+          position: { x: 700, y: 100 },
+          data: {
+            label: 'Power Supply',
+            sensorType: 'power-input',
+            terminals: [
+              { id: 'vcc+', name: 'VCC+', color: colorMap.white },
+              { id: 'gnd', name: 'GND', color: colorMap.brown }
+            ]
+          },
+        };
+
+        // Add power input edges (arrows point INTO neo device)
+        newEdges.push({
+          id: `e-${edgeId++}`,
+          source: 'device',
+          target: 'neo',
+          sourceHandle: 'vcc+',
+          targetHandle: 'vcc',
+          type: 'coloredWire',
+          data: { label: 'VCC+ (Pin 1)', color: colorMap.white },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: colorMap.white,
+          },
+        });
+
+        newEdges.push({
+          id: `e-${edgeId++}`,
+          source: 'device',
+          target: 'neo',
+          sourceHandle: 'gnd',
+          targetHandle: 'gnd',
+          type: 'coloredWire',
+          data: { label: 'GND (Pin 2)', color: colorMap.brown },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: colorMap.brown,
+          },
+        });
+      } else if (plugType === 'outputs') {
         // For outputs, create relay node with A1 and A2 terminals
         const outputNum = parseInt(outputNumber) || 1;
 
@@ -180,6 +226,52 @@ export const ReactFlowDiagram = ({ plugType, typeData, outputNumber, channelNumb
           });
         }
 
+      } else if (typeData.value === 'power-input') {
+        // Power input - simple two-wire connection (arrows point INTO neo)
+        neoNode.data.outputs = []; // Neo is the target
+
+        deviceNode = {
+          id: 'device',
+          type: 'sensor',
+          position: { x: 700, y: 100 },
+          data: {
+            label: 'Power Supply',
+            sensorType: 'power-input',
+            terminals: [
+              { id: 'vcc+', name: 'VCC+', color: colorMap.white },
+              { id: 'gnd', name: 'GND', color: colorMap.brown }
+            ]
+          },
+        };
+
+        // Add power input edges (arrows point INTO neo device)
+        newEdges.push({
+          id: `e-${edgeId++}`,
+          source: 'device',
+          target: 'neo',
+          sourceHandle: 'vcc+',
+          targetHandle: 'vcc',
+          type: 'coloredWire',
+          data: { label: 'VCC+ (Pin 1)', color: colorMap.white },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: colorMap.white,
+          },
+        });
+
+        newEdges.push({
+          id: `e-${edgeId++}`,
+          source: 'device',
+          target: 'neo',
+          sourceHandle: 'gnd',
+          targetHandle: 'gnd',
+          type: 'coloredWire',
+          data: { label: 'GND (Pin 2)', color: colorMap.brown },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: colorMap.brown,
+          },
+        });
       } else if (plugType === 'inputs') {
         // For inputs, create sensor node with selected channel
         const channelNum = parseInt(channelNumber) || 1;
@@ -265,10 +357,59 @@ export const ReactFlowDiagram = ({ plugType, typeData, outputNumber, channelNumb
 
       } else if (plugType === 'communications') {
         // For communications, create simplified device node
-        neoNode.data.outputs = [];
-        let deviceTerminals = [];
+        
+        if (typeData.value === 'power-input') {
+          // Power input - simple two-wire connection (arrows point INTO neo)
+          neoNode.data.outputs = []; // Neo is the target
 
-        if (typeData.value === 'rs485') {
+          deviceNode = {
+            id: 'device',
+            type: 'sensor',
+            position: { x: 700, y: 100 },
+            data: {
+              label: 'Power Supply',
+              sensorType: 'power-input',
+              terminals: [
+                { id: 'vcc+', name: 'VCC+', color: colorMap.white },
+                { id: 'gnd', name: 'GND', color: colorMap.brown }
+              ]
+            },
+          };
+
+          // Add power input edges (arrows point INTO neo device)
+          newEdges.push({
+            id: `e-${edgeId++}`,
+            source: 'device',
+            target: 'neo',
+            sourceHandle: 'vcc+',
+            targetHandle: 'vcc',
+            type: 'coloredWire',
+            data: { label: 'VCC+ (Pin 1)', color: colorMap.white },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: colorMap.white,
+            },
+          });
+
+          newEdges.push({
+            id: `e-${edgeId++}`,
+            source: 'device',
+            target: 'neo',
+            sourceHandle: 'gnd',
+            targetHandle: 'gnd',
+            type: 'coloredWire',
+            data: { label: 'GND (Pin 2)', color: colorMap.brown },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: colorMap.brown,
+            },
+          });
+        } else {
+          // Other communication types
+          neoNode.data.outputs = [];
+          let deviceTerminals = [];
+
+          if (typeData.value === 'rs485') {
           neoNode.data.outputs = [
             { id: 'b', color: colorMap.green },
             { id: 'a', color: colorMap.yellow }
@@ -442,6 +583,7 @@ export const ReactFlowDiagram = ({ plugType, typeData, outputNumber, channelNumb
               color: colorMap.yellow,
             },
           });
+        }
         }
       }
 

@@ -20,6 +20,10 @@ export const DeviceConfigPanel = ({ device, onUpdate, onRemove, availableDevices
     onUpdate(device.id, { input: parseInt(e.target.value) });
   };
 
+  const handlePowerSourceChange = (e) => {
+    onUpdate(device.id, { powerSource: e.target.value });
+  };
+
   const getChannelOptions = () => {
     if (device.channels) {
       return device.channels.map(ch => ({
@@ -134,6 +138,20 @@ export const DeviceConfigPanel = ({ device, onUpdate, onRemove, availableDevices
         </div>
       )}
 
+      {device.powerSource && (
+        <div className="config-section">
+          <label htmlFor="power-source-select">Power Source:</label>
+          <select
+            id="power-source-select"
+            value={device.powerSource || 'Solar'}
+            onChange={handlePowerSourceChange}
+          >
+            <option value="Solar">Solar</option>
+            <option value="PSU">PSU (Power Supply Unit)</option>
+          </select>
+        </div>
+      )}
+
       <div className="config-actions">
         <button
           className="btn-remove"
@@ -178,13 +196,27 @@ const getWiringConnections = (device) => {
   };
 
   if (device.plugType === 'inputs') {
-    const channelPins = { 1: 8, 2: 7, 3: 6, 4: 5 };
-    const pin = channelPins[device.channel];
-    if (pin) addConn(pin, 'Signal');
-    addConn(3, 'Power+');
-    addConn(4, 'GND');
+    if (device.type === 'power-input') {
+      // Power input - only pins 1 and 2
+      addConn(1, 'VCC+');
+      addConn(2, 'GND');
+    } else {
+      // Solar power pins (always present)
+      addConn(1, 'Solar/Supply +');
+      addConn(2, 'GND');
+      // Signal and sensor power
+      const channelPins = { 1: 8, 2: 7, 3: 6, 4: 5 };
+      const pin = channelPins[device.channel];
+      if (pin) addConn(pin, 'Signal');
+      addConn(3, 'Sensor Vout+');
+      addConn(4, 'Sensor GND');
+    }
   }
   else if (device.plugType === 'outputs') {
+    // Solar power pins (always present)
+    addConn(1, 'Solar/Supply +');
+    addConn(2, 'GND');
+    // Actuator connections
     if (device.type === 'latching') {
       if (device.output === 1) {
         addConn(5, 'A1');
@@ -193,15 +225,25 @@ const getWiringConnections = (device) => {
         addConn(7, 'A3');
         addConn(8, 'A4');
       }
-      addConn(4, 'GND');
+      addConn(4, 'Actuator GND');
     } else {
       const outputPins = { 1: 5, 2: 6, 3: 7, 4: 8 };
       const pin = outputPins[device.output];
       if (pin) addConn(pin, `Out ${device.output}`);
-      addConn(4, 'GND');
+      addConn(4, 'Actuator GND');
     }
   }
+  else if (device.plugType === 'power') {
+    // Power input - only pins 1 and 2
+    const sourceLabel = device.powerSource || 'Solar';
+    addConn(1, `${sourceLabel} +`);
+    addConn(2, `${sourceLabel} -`);
+  }
   else if (device.plugType === 'communications') {
+    // Solar power pins (always present for all comms devices)
+    addConn(1, 'Solar/Supply +');
+    addConn(2, 'GND');
+    // Device-specific connections
     if (device.type === 'rs485') {
       addConn(3, 'B');
       addConn(4, 'A');
@@ -214,8 +256,8 @@ const getWiringConnections = (device) => {
     } else if (device.type === 'pulse') {
       const inputNum = device.input || 1;
       addConn(inputNum === 1 ? 6 : 5, 'Signal');
-      addConn(3, 'Power+');
-      addConn(4, 'GND');
+      addConn(3, 'Sensor Vout+');
+      addConn(4, 'Sensor GND');
     }
   }
 

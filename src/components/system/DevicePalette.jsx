@@ -15,9 +15,10 @@ export const DevicePalette = ({ availableDevices, onAddDevice }) => {
                 onClick={() => onAddDevice(device)}
               >
                 <span className="device-icon">
-                  {category.category === 'Inputs' && '📊'}
-                  {category.category === 'Communications' && '📡'}
-                  {category.category === 'Outputs' && '🔌'}
+                  {device.type === 'power-input' && '🔋'}
+                  {device.type !== 'power-input' && category.category === 'Inputs' && '📊'}
+                  {device.type !== 'power-input' && category.category === 'Communications' && '📡'}
+                  {device.type !== 'power-input' && category.category === 'Outputs' && '🔌'}
                 </span>
                 <span className="device-label">{device.label}</span>
               </button>

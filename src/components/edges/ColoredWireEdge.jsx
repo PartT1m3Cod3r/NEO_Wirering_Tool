@@ -1,4 +1,4 @@
-import { getSmoothStepPath } from 'reactflow';
+import { getSmoothStepPath, EdgeLabelRenderer } from 'reactflow';
 
 export const ColoredWireEdge = ({
   id,
@@ -8,6 +8,7 @@ export const ColoredWireEdge = ({
   targetY,
   sourcePosition,
   targetPosition,
+  target,
   style = {},
   markerEnd,
   data,
@@ -19,10 +20,16 @@ export const ColoredWireEdge = ({
     targetX,
     targetY,
     targetPosition,
-    borderRadius: 15, // Rounded corners for wires
+    borderRadius: 15,
   });
 
   const { label, color = '#e0e0e0' } = data || {};
+
+  // Position all labels at the arrow tip (target)
+  // This applies uniformly to sensor connections AND power input connections
+  const xOffset = targetPosition === 'right' ? 55 : -35;
+  const shiftedX = targetX + xOffset;
+  const shiftedY = targetY;
 
   return (
     <>
@@ -31,7 +38,7 @@ export const ColoredWireEdge = ({
         style={{
           ...style,
           stroke: color,
-          strokeWidth: 3, // Slightly thinner for cleaner look
+          strokeWidth: 3,
           strokeLinecap: 'round',
         }}
         className="react-flow__edge-path"
@@ -39,34 +46,38 @@ export const ColoredWireEdge = ({
         markerEnd={markerEnd}
       />
       {label && (
-        <foreignObject
-          x={labelX - 50}
-          y={labelY - 10}
-          width={100}
-          height={20}
-          style={{ overflow: 'visible' }} // Ensure content isn't clipped
-        >
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            width: '100%',
-            height: '100%'
-          }}>
-            <span style={{
-              backgroundColor: '#1a1a2e',
-              color: color,
-              padding: '2px 6px',
-              borderRadius: '4px',
-              fontSize: '10px',
-              fontWeight: '600',
-              border: `1px solid ${color}`,
-              whiteSpace: 'nowrap'
+        <EdgeLabelRenderer>
+          <div
+            style={{
+              position: 'absolute',
+              transform: `translate(-50%, -50%) translate(${shiftedX}px, ${shiftedY}px)`,
+              fontSize: 12,
+              pointerEvents: 'all',
+              zIndex: 1000,
+            }}
+            className="nodrag nopan"
+          >
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
             }}>
-              {label}
-            </span>
+              <span style={{
+                backgroundColor: '#1a1a2e',
+                color: color,
+                padding: '2px 6px',
+                borderRadius: '4px',
+                fontSize: '10px',
+                fontWeight: '600',
+                border: `1px solid ${color}`,
+                whiteSpace: 'nowrap',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.5)'
+              }}>
+                {label}
+              </span>
+            </div>
           </div>
-        </foreignObject>
+        </EdgeLabelRenderer>
       )}
     </>
   );

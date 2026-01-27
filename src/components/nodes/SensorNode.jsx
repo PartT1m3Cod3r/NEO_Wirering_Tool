@@ -17,9 +17,14 @@ export const SensorNode = ({ data }) => {
     sensorLabel = 'SDI-12';
   } else if (sensorType === 'wiegand') {
     sensorLabel = 'Wiegand';
+  } else if (sensorType === 'power-input') {
+    sensorLabel = 'Power';
   } else {
     sensorLabel = 'Device';
   }
+
+  // Power supply uses source handles (outputs), sensors use target handles (inputs)
+  const isPowerSource = sensorType === 'power-input';
 
   return (
     <div className="sensor-node">
@@ -37,41 +42,20 @@ export const SensorNode = ({ data }) => {
         <text x="90" y="90" fill="#00a896" fontSize="14" fontWeight="700" textAnchor="middle">
           {sensorLabel}
         </text>
-
-        {/* Connection terminals */}
-        {terminals && terminals.map((terminal, idx) => {
-          // Align with Neo Device spacing (start 55, step 40)
-          // Handle centers at: 55, 95, 135
-          const positions = [
-            { x: 10, y: 55 },   // Terminal 1 (centers at 55)
-            { x: 10, y: 95 },   // Terminal 2 (centers at 95)
-            { x: 10, y: 135 }   // Terminal 3 (centers at 135)
-          ];
-          const pos = positions[idx] || { x: 10, y: 55 + (idx * 40) };
-
-          return (
-            <g key={idx}>
-              {/* Terminal Label removed - moved to cable */}
-            </g>
-          );
-        })}
       </svg>
 
       {/* React Flow Handles */}
       {terminals && terminals.map((terminal, idx) => {
-        // Handle positions must align with Neo device handle positions
-        // Neo device handles: 55, 95, 135 (center position)
-        // Handle is 10px high, so 'top' should be center - 5 = 55, 95, 135
         const topPos = 55 + (idx * 40);
 
         return (
           <Handle
             key={idx}
-            type="target"
-            position={Position.Left}
+            type={isPowerSource ? 'source' : 'target'}
+            position={isPowerSource ? Position.Right : Position.Left}
             id={terminal.id}
             style={{
-              left: 45, // Integrated into the SVG visual area
+              [isPowerSource ? 'right' : 'left']: -5,
               top: topPos,
               backgroundColor: terminal.color,
               border: '2px solid #1a1a2e',

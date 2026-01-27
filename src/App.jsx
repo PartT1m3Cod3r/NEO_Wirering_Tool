@@ -57,7 +57,7 @@ function App() {
           </div>
         )}
 
-        {selectedPlug === 'inputs' && selectedTypeData && (
+        {selectedPlug === 'inputs' && selectedTypeData && selectedTypeData.value !== 'power-input' && (
           <div className="dropdown-group">
             <label htmlFor="channel-select">Channel Number:</label>
             <select
@@ -74,7 +74,7 @@ function App() {
           </div>
         )}
 
-        {selectedPlug === 'outputs' && selectedTypeData && (
+        {selectedPlug === 'outputs' && selectedTypeData && selectedTypeData.value !== 'power-input' && (
           <div className="dropdown-group">
             <label htmlFor="output-select">Output Number:</label>
             <select

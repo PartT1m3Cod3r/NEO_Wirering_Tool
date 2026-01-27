@@ -391,6 +391,33 @@
   font-style: italic;
 }
 
+.pin-item.solar-pin {
+  border-color: #4a3a1a;
+  background: #1a1510;
+}
+
+.pin-item.solar-pin .pin-device-count {
+  color: #cc9933;
+  font-style: italic;
+}
+
+/* Battery Node Styles */
+.battery-node {
+  background: rgba(26, 26, 46, 0.9);
+  border: 2px solid #00a896;
+  border-radius: 12px;
+  padding: 10px;
+  min-width: 180px;
+  box-shadow: 0 4px 20px rgba(0, 168, 150, 0.3);
+}
+
+.battery-node .node-header h4 {
+  color: #00a896;
+  font-size: 1em;
+  margin: 0;
+  text-shadow: 0 0 5px rgba(0, 168, 150, 0.5);
+}
+
 /* Scrollbar styling */
 .device-palette::-webkit-scrollbar,
 .config-sidebar::-webkit-scrollbar {

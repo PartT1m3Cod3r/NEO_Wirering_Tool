@@ -51,7 +51,37 @@ export const NeoDeviceNode = ({ data }) => {
           <text x="70" y="70" dy="2" fontSize="5" textAnchor="middle" fill="#FFF">8</text>
         </svg>
 
-        {/* React Flow Handles - Positioned mostly invisible to serve as anchors */}
+        {/* React Flow Handles */}
+        
+        {/* Target handles (inputs) - for power input connections on RIGHT side */}
+        <Handle
+          type="target"
+          position={Position.Right}
+          id="vcc"
+          style={{
+            top: 40,
+            right: -5,
+            backgroundColor: '#FFFFFF',
+            border: '2px solid #1a1a2e',
+            width: '10px',
+            height: '10px'
+          }}
+        />
+        <Handle
+          type="target"
+          position={Position.Right}
+          id="gnd"
+          style={{
+            top: 70,
+            right: -5,
+            backgroundColor: '#8B4513',
+            border: '2px solid #1a1a2e',
+            width: '10px',
+            height: '10px'
+          }}
+        />
+        
+        {/* Source handles (outputs) */}
         {outputs && outputs.map((output, idx) => (
           <Handle
             key={idx}
@@ -59,11 +89,7 @@ export const NeoDeviceNode = ({ data }) => {
             position={Position.Right}
             id={output.id}
             style={{
-              top: 30 + (idx * 20), // Tighter vertical packing or spread out?
-              // Existing logic was 55 + idx*40. That's tall.
-              // Let's keep them distributed on the right edge.
-              // But visually they aren't "pins" anymore.
-              // We'll keep them as connection points on the right edge of the card style.
+              top: 30 + (idx * 20),
               right: -5,
               backgroundColor: output.color,
               border: '2px solid #1a1a2e',
