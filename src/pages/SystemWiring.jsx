@@ -880,6 +880,18 @@ export const SystemWiring = () => {
 
   // Export Wiring Schedule as CSV
   const handleExportCSV = () => {
+    // Pin to label mapping with function descriptions
+    const pinLabels = {
+      1: { color: 'White', label: 'VCC+ (Solar/Supply)' },
+      2: { color: 'Brown', label: 'GND' },
+      3: { color: 'Green', label: 'Sensor Power Out (Vout+)' },
+      4: { color: 'Yellow', label: 'Sensor GND' },
+      5: { color: 'Grey', label: 'Input 4 / Output 1 (A1) / D1' },
+      6: { color: 'Pink', label: 'Input 3 / Output 2 (A2) / D0 / Pulse 1' },
+      7: { color: 'Blue', label: 'Input 2 / Output 3 (A3) / SDI-12 Data' },
+      8: { color: 'Red', label: 'Input 1 / Output 4 (A4)' },
+    };
+
     // Header
     let csvContent = "Device Name,Type,Plug,Connections\n";
 
@@ -888,15 +900,14 @@ export const SystemWiring = () => {
       const pins = getUsedPins(device);
       const connectionStrings = [];
 
-      // Add signal pins
-      pins.signalPins.forEach(pin => {
-        const colorName = getColorName(pin); // Need helper or inline map
-        connectionStrings.push(`Pin ${pin} (${colorName})`);
-      });
-      // Add power pins
-      pins.powerPins.forEach(pin => {
-        const colorName = getColorName(pin);
-        connectionStrings.push(`Pin ${pin} (${colorName})`);
+      // Process all pins used by this device
+      const allPins = [...new Set([...pins.all])].sort((a, b) => a - b);
+      
+      allPins.forEach(pin => {
+        const pinInfo = pinLabels[pin];
+        if (pinInfo) {
+          connectionStrings.push(`Pin ${pin} ${pinInfo.color} - ${pinInfo.label}`);
+        }
       });
 
       const connections = connectionStrings.join("; ");
