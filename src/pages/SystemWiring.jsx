@@ -923,19 +923,41 @@ export const SystemWiring = () => {
     if (!reactFlowWrapper.current) return;
     
     try {
-      // Find the react-flow container
-      const flowContainer = reactFlowWrapper.current.querySelector('.react-flow__viewport');
-      if (!flowContainer) {
-        alert('Could not find diagram container');
-        return;
-      }
+      // Find all overlay elements to hide
+      const container = reactFlowWrapper.current;
+      const overlays = {
+        actions: container.querySelector('.diagram-actions'),
+        minimap: container.querySelector('.react-flow__minimap'),
+        controls: container.querySelector('.react-flow__controls'),
+        conflict: container.querySelector('.conflict-warning'),
+        attribution: container.querySelector('.react-flow__attribution'),
+      };
 
-      // Temporarily expand the container to capture all nodes
-      const canvas = await html2canvas(reactFlowWrapper.current, {
+      // Store original display values and hide overlays
+      const originalDisplay = {};
+      Object.entries(overlays).forEach(([key, element]) => {
+        if (element) {
+          originalDisplay[key] = element.style.display;
+          element.style.display = 'none';
+        }
+      });
+
+      // Wait a moment for the UI to update
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Capture the diagram
+      const canvas = await html2canvas(container, {
         backgroundColor: '#0a0a0f',
         scale: 2,
         logging: false,
         useCORS: true,
+      });
+
+      // Restore overlays
+      Object.entries(overlays).forEach(([key, element]) => {
+        if (element) {
+          element.style.display = originalDisplay[key] || '';
+        }
       });
 
       // Convert to blob and download
