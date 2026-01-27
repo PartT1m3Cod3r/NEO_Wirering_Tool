@@ -1,0 +1,414 @@
+/* CSS for device name input */
+.device-name-input {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background-color: #2a2a3a;
+  color: #fff;
+}
+
+.device-name-input:focus {
+  outline: none;
+  border-color: #00a896;
+}
+
+/* Wiring Legend */
+.wiring-legend {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #444;
+}
+
+.wiring-legend h4 {
+  margin-bottom: 10px;
+  color: #ccc;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.connection-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 6px 10px;
+  border-radius: 4px;
+}
+
+.connection-item .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.connection-item .pin-text {
+  color: #eee;
+  margin-right: 8px;
+}
+
+.connection-item .arrow {
+  color: #666;
+  margin-right: 8px;
+}
+
+.connection-item .device-label {
+  color: #00a896;
+  font-weight: 500;
+}
+
+.system-wiring-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 60px);
+  background-color: #0a0a0f;
+  color: #e0e0e0;
+}
+
+.system-header {
+  padding: 20px 30px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #0f0f23 100%);
+  border-bottom: 2px solid #00a896;
+}
+
+.system-header h1 {
+  margin: 0 0 8px 0;
+  color: #00a896;
+  font-size: 1.8rem;
+}
+
+.system-header p {
+  margin: 0;
+  color: #888;
+  font-size: 0.95rem;
+}
+
+.system-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Device Palette */
+.device-palette {
+  width: 250px;
+  background: #1a1a2e;
+  border-right: 1px solid #2a2a3a;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.device-palette h3 {
+  margin: 0 0 8px 0;
+  color: #00a896;
+  font-size: 1.1rem;
+}
+
+.palette-hint {
+  margin: 0 0 20px 0;
+  color: #666;
+  font-size: 0.8rem;
+}
+
+.device-category {
+  margin-bottom: 20px;
+}
+
+.device-category h4 {
+  margin: 0 0 10px 0;
+  color: #888;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.device-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.device-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #0f0f23;
+  border: 1px solid #2a2a3a;
+  border-radius: 6px;
+  color: #e0e0e0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.device-item:hover {
+  background: #1a3a3a;
+  border-color: #00a896;
+  transform: translateX(4px);
+}
+
+.device-icon {
+  font-size: 1.2rem;
+}
+
+.device-label {
+  font-size: 0.9rem;
+}
+
+/* Diagram Container */
+.diagram-container {
+  flex: 1;
+  position: relative;
+  background: #0a0a0f;
+}
+
+.conflict-warning {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #3a1a1a;
+  border: 2px solid #ff4444;
+  padding: 15px 25px;
+  border-radius: 8px;
+  color: #ff6666;
+  font-weight: 600;
+  z-index: 10;
+}
+
+/* Config Sidebar */
+.config-sidebar {
+  width: 300px;
+  background: #1a1a2e;
+  border-left: 1px solid #2a2a3a;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Device Config Panel */
+.device-config-panel {
+  padding: 20px;
+  border-bottom: 1px solid #2a2a3a;
+}
+
+.device-config-panel.empty {
+  text-align: center;
+  color: #666;
+}
+
+.device-config-panel h3 {
+  margin: 0 0 15px 0;
+  color: #00a896;
+  font-size: 1.1rem;
+}
+
+.config-section {
+  margin-bottom: 20px;
+}
+
+.config-section h4 {
+  margin: 0 0 10px 0;
+  color: #e0e0e0;
+  font-size: 1rem;
+}
+
+.device-type,
+.device-plug {
+  margin: 5px 0;
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.config-section label {
+  display: block;
+  margin-bottom: 8px;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.config-section select {
+  width: 100%;
+  padding: 10px 12px;
+  background: #0f0f23;
+  border: 1px solid #2a2a3a;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.config-section select:focus {
+  outline: none;
+  border-color: #00a896;
+}
+
+.config-actions {
+  margin-top: 20px;
+}
+
+.btn-remove {
+  width: 100%;
+  padding: 12px;
+  background: #3a1a1a;
+  border: 1px solid #ff4444;
+  border-radius: 6px;
+  color: #ff6666;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-remove:hover {
+  background: #4a1a1a;
+}
+
+/* Pin Usage Summary */
+.pin-usage-summary {
+  padding: 20px;
+  flex: 1;
+}
+
+.pin-usage-summary h3 {
+  margin: 0 0 15px 0;
+  color: #00a896;
+  font-size: 1.1rem;
+}
+
+.empty-message {
+  color: #666;
+  font-style: italic;
+}
+
+.device-count {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #0f0f23;
+  border-radius: 6px;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.conflict-alert {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #3a1a1a;
+  border: 1px solid #ff4444;
+  border-radius: 6px;
+  color: #ff6666;
+}
+
+.conflict-alert strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.conflict-alert ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.conflict-alert li {
+  margin: 4px 0;
+  font-size: 0.85rem;
+}
+
+.pin-list h4 {
+  margin: 0 0 10px 0;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.pin-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  background: #0f0f23;
+  border: 1px solid #2a2a3a;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.pin-item.conflict {
+  border-color: #ff4444;
+  background: #2a1a1a;
+}
+
+.pin-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pin-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pin-number {
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.pin-color-name {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.pin-device-count {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+/* Plug-specific pin sections */
+.plug-pin-section {
+  margin-bottom: 15px;
+}
+
+.plug-pin-section h5 {
+  margin: 0 0 8px 0;
+  color: #00a896;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pin-item.power-pin {
+  border-color: #4a4a3a;
+  background: #1a1a15;
+}
+
+.pin-item.power-pin .pin-device-count {
+  color: #888;
+  font-style: italic;
+}
+
+/* Scrollbar styling */
+.device-palette::-webkit-scrollbar,
+.config-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.device-palette::-webkit-scrollbar-track,
+.config-sidebar::-webkit-scrollbar-track {
+  background: #0a0a0f;
+}
+
+.device-palette::-webkit-scrollbar-thumb,
+.config-sidebar::-webkit-scrollbar-thumb {
+  background: #2a2a3a;
+  border-radius: 4px;
+}
+
+.device-palette::-webkit-scrollbar-thumb:hover,
+.config-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #3a3a4a;
+}
