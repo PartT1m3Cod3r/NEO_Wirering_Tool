@@ -900,10 +900,18 @@ export const SystemWiring = () => {
       const pins = getUsedPins(device);
       const connectionStrings = [];
 
-      // Process all pins used by this device
-      const allPins = [...new Set([...pins.all])].sort((a, b) => a - b);
+      // For sensors (non-power-input), exclude pins 1 & 2 (solar supply)
+      // For power-input, show only pins 1 & 2
+      let pinsToShow;
+      if (device.type === 'power-input') {
+        // Power input: show only pins 1 & 2
+        pinsToShow = [1, 2];
+      } else {
+        // Sensors: show signal pins and power pins (3-8), exclude solar pins 1-2
+        pinsToShow = [...new Set([...pins.signalPins, ...pins.powerPins])].sort((a, b) => a - b);
+      }
       
-      allPins.forEach(pin => {
+      pinsToShow.forEach(pin => {
         const pinInfo = pinLabels[pin];
         if (pinInfo) {
           connectionStrings.push(`Pin ${pin} ${pinInfo.color} - ${pinInfo.label}`);
