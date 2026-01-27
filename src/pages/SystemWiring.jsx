@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -9,6 +9,7 @@ import ReactFlow, {
   addEdge,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import html2canvas from 'html2canvas';
 import { NeoDeviceNode } from '../components/nodes/NeoDeviceNode';
 import { SensorNode } from '../components/nodes/SensorNode';
 import { RelayNode } from '../components/nodes/RelayNode';
@@ -189,6 +190,7 @@ export const SystemWiring = () => {
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [connectedDevices, setConnectedDevices] = useState([]);
   const [pinConflicts, setPinConflicts] = useState([]);
+  const reactFlowWrapper = useRef(null);
 
   // Update Neo Device nodes based on connected devices
   useEffect(() => {
@@ -916,6 +918,45 @@ export const SystemWiring = () => {
     return names[pin] || 'Unknown';
   };
 
+  // Export diagram as PNG image
+  const handleExportImage = async () => {
+    if (!reactFlowWrapper.current) return;
+    
+    try {
+      // Find the react-flow container
+      const flowContainer = reactFlowWrapper.current.querySelector('.react-flow__viewport');
+      if (!flowContainer) {
+        alert('Could not find diagram container');
+        return;
+      }
+
+      // Temporarily expand the container to capture all nodes
+      const canvas = await html2canvas(reactFlowWrapper.current, {
+        backgroundColor: '#0a0a0f',
+        scale: 2,
+        logging: false,
+        useCORS: true,
+      });
+
+      // Convert to blob and download
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `neo_wiring_diagram_${new Date().toISOString().slice(0, 10)}.png`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }
+      }, 'image/png');
+    } catch (err) {
+      console.error('Error exporting image:', err);
+      alert('Error exporting image. Please try again.');
+    }
+  };
+
   return (
     <div className="system-wiring-page">
       <div className="system-layout">
@@ -926,7 +967,7 @@ export const SystemWiring = () => {
         />
 
         {/* Center - React Flow Diagram */}
-        <div className="diagram-container">
+        <div className="diagram-container" ref={reactFlowWrapper}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -980,6 +1021,14 @@ export const SystemWiring = () => {
                 style={{ padding: '8px 12px', background: '#4a4a5a', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
               >
                 📋 Export CSV
+              </button>
+              <button
+                onClick={handleExportImage}
+                className="action-btn"
+                title="Export Diagram as Image (PNG)"
+                style={{ padding: '8px 12px', background: '#5a4a6a', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+              >
+                🖼️ Export Image
               </button>
             </div>
           </ReactFlow>
