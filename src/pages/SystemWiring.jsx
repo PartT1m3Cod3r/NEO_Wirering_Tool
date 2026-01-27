@@ -820,9 +820,50 @@ export const SystemWiring = () => {
       try {
         const json = JSON.parse(e.target.result);
         if (Array.isArray(json)) {
+          // Clear existing nodes and edges first
+          setNodes([]);
+          setEdges([]);
+          
+          // Set the loaded devices
           setConnectedDevices(json);
-          // Nodes/Edges will regenerate automatically via useEffect/createEdgesForDevice
-          // Note: We might want to clear existing manually to be safe, but state update handles replacement
+          
+          // Create nodes and edges for each loaded device
+          setTimeout(() => {
+            const newNodes = [];
+            const newEdges = [];
+            
+            json.forEach((device, index) => {
+              const deviceCount = index;
+              const yOffset = device.plugType === 'inputs' ? 50 :
+                device.plugType === 'communications' ? 350 : 650;
+              
+              // Determine node type
+              const getNodeType = () => {
+                if (device.type === 'power-input') return 'battery';
+                if (device.plugType === 'outputs') return 'relay';
+                return 'sensor';
+              };
+              
+              const newNode = {
+                id: device.id,
+                type: getNodeType(),
+                position: { x: 400 + (deviceCount * 50), y: yOffset + (deviceCount * 30) },
+                data: {
+                  label: device.label,
+                  sensorType: device.type,
+                  terminals: getDeviceTerminals(device),
+                },
+              };
+              newNodes.push(newNode);
+              
+              // Create edges for this device
+              const deviceEdges = createEdgesForDevice(device);
+              newEdges.push(...deviceEdges);
+            });
+            
+            setNodes(prev => [...prev, ...newNodes]);
+            setEdges(prev => [...prev, ...newEdges]);
+          }, 0);
         } else {
           alert("Invalid file format: Expected an array of devices.");
         }
