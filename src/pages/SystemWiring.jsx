@@ -9,7 +9,6 @@ import ReactFlow, {
   addEdge,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import html2canvas from 'html2canvas';
 import { NeoDeviceNode } from '../components/nodes/NeoDeviceNode';
 import { SensorNode } from '../components/nodes/SensorNode';
 import { RelayNode } from '../components/nodes/RelayNode';
@@ -83,10 +82,10 @@ const findNextAvailable = (deviceTemplate, connectedDevices) => {
     .filter(d => d.plugType === deviceTemplate.plugType && d.type === deviceTemplate.type)
     .map(d => d.channel || d.output || d.input);
 
-  const availableList = 
-    deviceTemplate.channels || 
-    deviceTemplate.outputs || 
-    deviceTemplate.inputs || 
+  const availableList =
+    deviceTemplate.channels ||
+    deviceTemplate.outputs ||
+    deviceTemplate.inputs ||
     [];
 
   // Find first available option
@@ -841,20 +840,20 @@ export const SystemWiring = () => {
           // Clear existing nodes and edges first
           setNodes([]);
           setEdges([]);
-          
+
           // Set the loaded devices
           setConnectedDevices(json);
-          
+
           // Create nodes and edges for each loaded device
           setTimeout(() => {
             const newNodes = [];
             const newEdges = [];
-            
+
             json.forEach((device, index) => {
               const deviceCount = index;
               const yOffset = device.plugType === 'inputs' ? 50 :
                 device.plugType === 'communications' ? 350 : 650;
-              
+
               // Determine node type
               const getNodeType = () => {
                 if (device.type === 'power-input') return 'battery';
@@ -862,7 +861,7 @@ export const SystemWiring = () => {
                 if (device.plugType === 'outputs') return 'relay';
                 return 'sensor';
               };
-              
+
               const newNode = {
                 id: device.id,
                 type: getNodeType(),
@@ -874,12 +873,12 @@ export const SystemWiring = () => {
                 },
               };
               newNodes.push(newNode);
-              
+
               // Create edges for this device
               const deviceEdges = createEdgesForDevice(device);
               newEdges.push(...deviceEdges);
             });
-            
+
             setNodes(prev => [...prev, ...newNodes]);
             setEdges(prev => [...prev, ...newEdges]);
           }, 0);
@@ -901,15 +900,15 @@ export const SystemWiring = () => {
     const getPinLabel = (pin, device) => {
       const colorNames = { 1: 'White', 2: 'Brown', 3: 'Green', 4: 'Yellow', 5: 'Grey', 6: 'Pink', 7: 'Blue', 8: 'Red' };
       const color = colorNames[pin] || 'Unknown';
-      
+
       // Power pins (3, 4) - same for all
       if (pin === 3) return `Pin ${pin} ${color} - Sensor Power Out (Vout+)`;
       if (pin === 4) return `Pin ${pin} ${color} - Sensor GND`;
-      
+
       // Solar pins (1, 2) - only for power-input
       if (pin === 1) return `Pin ${pin} ${color} - VCC+ (Solar/Supply)`;
       if (pin === 2) return `Pin ${pin} ${color} - GND`;
-      
+
       // Signal pins (5-8) - context dependent
       if (device.plugType === 'inputs') {
         // Inputs plug: Analog inputs
@@ -936,7 +935,7 @@ export const SystemWiring = () => {
         }
         return `Pin ${pin} ${color} - Signal`;
       }
-      
+
       return `Pin ${pin} ${color}`;
     };
 
@@ -958,7 +957,7 @@ export const SystemWiring = () => {
         // Sensors: show signal pins and power pins (3-8), exclude solar pins 1-2
         pinsToShow = [...new Set([...pins.signalPins, ...pins.powerPins])].sort((a, b) => a - b);
       }
-      
+
       pinsToShow.forEach(pin => {
         connectionStrings.push(getPinLabel(pin, device));
       });
@@ -983,134 +982,93 @@ export const SystemWiring = () => {
   };
 
   // Export diagram as PNG image
-  const handleExportImage = async () => {
-    if (!reactFlowWrapper.current) return;
+  const handleExportImage = useCallback(async () => {
+    if (!reactFlowWrapper.current) {
+      console.warn('Export: ReactFlow wrapper not found');
+      return;
+    }
+
+    // Store elements that need to be hidden/restored
+    const elementsToRestore = [];
     
     try {
-      // Find all overlay elements to hide
+      const { toPng } = await import('html-to-image');
       const container = reactFlowWrapper.current;
-      const overlays = {
-        actions: container.querySelector('.diagram-actions'),
-        minimap: container.querySelector('.react-flow__minimap'),
-        controls: container.querySelector('.react-flow__controls'),
-        conflict: container.querySelector('.conflict-warning'),
-        attribution: container.querySelector('.react-flow__attribution'),
-      };
 
-      // Store original display values and hide overlays
-      const originalDisplay = {};
-      Object.entries(overlays).forEach(([key, element]) => {
-        if (element) {
-          originalDisplay[key] = element.style.display;
-          element.style.display = 'none';
+      // Elements to hide during capture
+      const selectorsToHide = [
+        '.diagram-actions',      // Action buttons (Export, Save, etc.)
+        '.conflict-warning',     // Pin conflict warning banner
+        '.react-flow__controls', // Zoom controls
+        '.react-flow__minimap',  // Mini map
+        '.react-flow__attribution', // Attribution text
+      ];
+
+      // Hide elements and store original display values
+      selectorsToHide.forEach(selector => {
+        const el = container.querySelector(selector);
+        if (el) {
+          elementsToRestore.push({
+            element: el,
+            originalDisplay: el.style.display,
+            originalVisibility: el.style.visibility
+          });
+          el.style.display = 'none';
         }
-      });
-
-      // Temporarily remove filters from edges (html2canvas has issues with SVG filters)
-      const edgePaths = container.querySelectorAll('.react-flow__edge-path');
-      const originalFilters = [];
-      edgePaths.forEach((path, idx) => {
-        originalFilters[idx] = path.style.filter;
-        path.style.filter = 'none';
-      });
-
-      // Temporarily fix edge label styles for better capture
-      const edgeLabels = container.querySelectorAll('.edge-label-text');
-      const originalLabelStyles = [];
-      edgeLabels.forEach((label, idx) => {
-        originalLabelStyles[idx] = {
-          backgroundColor: label.style.backgroundColor,
-          color: label.style.color,
-        };
-        // Force solid colors for capture
-        label.style.backgroundColor = '#1a1a2e';
-        label.style.color = '#e0e0e0';
       });
 
       // Get current theme background color
       const isDarkTheme = document.documentElement.getAttribute('data-theme') !== 'light';
       const bgColor = isDarkTheme ? '#0a0a0f' : '#f5f5f7';
 
-      // Wait for the UI to update and ReactFlow to fully render
-      // Edge labels need extra time to position correctly
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait for UI to update after hiding elements
+      await new Promise(resolve => setTimeout(resolve, 150));
 
-      // Force ReactFlow to render all edges properly before capture
-      // by triggering a small viewport change
       const reactFlowEl = container.querySelector('.react-flow');
-      if (reactFlowEl) {
-        reactFlowEl.style.transform = 'translateZ(0)';
+      if (!reactFlowEl) {
+        throw new Error('ReactFlow element not found');
       }
-
-      // Wait a bit more for any lazy-rendered elements
-      await new Promise(resolve => setTimeout(resolve, 200));
 
       // Capture the diagram
-      const canvas = await html2canvas(container, {
+      const dataUrl = await toPng(reactFlowEl, {
         backgroundColor: bgColor,
-        scale: 2,
-        logging: true,
-        useCORS: true,
-        allowTaint: true,
-        foreignObjectRendering: false,
-        imageTimeout: 0,
-        onclone: (clonedDoc) => {
-          // Ensure all SVG elements are visible in the clone
-          const svgs = clonedDoc.querySelectorAll('svg');
-          svgs.forEach(svg => {
-            svg.style.overflow = 'visible';
-          });
-          // Ensure all edge paths are visible
-          const paths = clonedDoc.querySelectorAll('.react-flow__edge-path');
-          paths.forEach(path => {
-            path.style.strokeDasharray = 'none';
-          });
+        width: reactFlowEl.offsetWidth,
+        height: reactFlowEl.offsetHeight,
+        pixelRatio: 2, // Higher resolution
+        style: {
+          transform: 'translateZ(0)', // Force GPU rendering
+        },
+        filter: (node) => {
+          // Skip control elements
+          if (node.classList) {
+            if (node.classList.contains('react-flow__controls')) return false;
+            if (node.classList.contains('react-flow__minimap')) return false;
+            if (node.classList.contains('react-flow__attribution')) return false;
+          }
+          return true;
         }
       });
 
-      // Restore transform
-      if (reactFlowEl) {
-        reactFlowEl.style.transform = '';
-      }
+      // Download the image
+      const link = document.createElement('a');
+      const timestamp = new Date().toISOString().slice(0, 10);
+      link.href = dataUrl;
+      link.download = `neo_wiring_diagram_${timestamp}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
-      // Restore filters
-      edgePaths.forEach((path, idx) => {
-        path.style.filter = originalFilters[idx] || '';
-      });
-
-      // Restore label styles
-      edgeLabels.forEach((label, idx) => {
-        if (originalLabelStyles[idx]) {
-          label.style.backgroundColor = originalLabelStyles[idx].backgroundColor;
-          label.style.color = originalLabelStyles[idx].color;
-        }
-      });
-
-      // Restore overlays
-      Object.entries(overlays).forEach(([key, element]) => {
-        if (element) {
-          element.style.display = originalDisplay[key] || '';
-        }
-      });
-
-      // Convert to blob and download
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `neo_wiring_diagram_${new Date().toISOString().slice(0, 10)}.png`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        }
-      }, 'image/png');
     } catch (err) {
       console.error('Error exporting image:', err);
-      alert('Error exporting image. Please try again.');
+      alert('Failed to export image. Please try again.');
+    } finally {
+      // Always restore hidden elements
+      elementsToRestore.forEach(({ element, originalDisplay, originalVisibility }) => {
+        element.style.display = originalDisplay || '';
+        element.style.visibility = originalVisibility || '';
+      });
     }
-  };
+  }, []);
 
   return (
     <div className="system-wiring-page">
@@ -1150,7 +1108,16 @@ export const SystemWiring = () => {
                 onClick={handleSaveDesign}
                 className="action-btn"
                 title="Save Design (JSON)"
-                style={{ padding: '8px 12px', background: '#00a896', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                style={{ 
+                  padding: '8px 12px', 
+                  background: '#00a896', 
+                  color: '#fff', 
+                  border: 'none', 
+                  borderRadius: '4px', 
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: '500'
+                }}
               >
                 💾 Save
               </button>
@@ -1158,7 +1125,16 @@ export const SystemWiring = () => {
                 onClick={() => document.getElementById('load-design-input').click()}
                 className="action-btn"
                 title="Load Design (JSON)"
-                style={{ padding: '8px 12px', background: '#2a2a3a', color: '#fff', border: '1px solid #444', borderRadius: '4px', cursor: 'pointer' }}
+                style={{ 
+                  padding: '8px 12px', 
+                  background: '#2a2a3a', 
+                  color: '#fff', 
+                  border: '1px solid #444', 
+                  borderRadius: '4px', 
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: '500'
+                }}
               >
                 📂 Load
               </button>
@@ -1173,15 +1149,36 @@ export const SystemWiring = () => {
                 onClick={handleExportCSV}
                 className="action-btn"
                 title="Export Wiring Schedule (CSV)"
-                style={{ padding: '8px 12px', background: '#4a4a5a', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                style={{ 
+                  padding: '8px 12px', 
+                  background: '#4a4a5a', 
+                  color: '#fff', 
+                  border: 'none', 
+                  borderRadius: '4px', 
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: '500'
+                }}
               >
                 📋 Export CSV
               </button>
               <button
                 onClick={handleExportImage}
-                className="action-btn"
+                className="action-btn export-image-btn"
                 title="Export Diagram as Image (PNG)"
-                style={{ padding: '8px 12px', background: '#5a4a6a', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                style={{ 
+                  padding: '8px 12px', 
+                  background: '#7c4dff', 
+                  color: '#fff', 
+                  border: 'none', 
+                  borderRadius: '4px', 
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  transition: 'background 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.target.style.background = '#9575cd'}
+                onMouseLeave={(e) => e.target.style.background = '#7c4dff'}
               >
                 🖼️ Export Image
               </button>
