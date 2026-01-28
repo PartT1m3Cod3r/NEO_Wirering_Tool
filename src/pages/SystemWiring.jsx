@@ -1017,9 +1017,9 @@ export const SystemWiring = () => {
         }
       });
 
-      // Get current theme background color
+      // Get current theme background color - WHITE for light mode
       const isDarkTheme = document.documentElement.getAttribute('data-theme') !== 'light';
-      const bgColor = isDarkTheme ? '#0a0a0f' : '#f5f5f7';
+      const bgColor = isDarkTheme ? '#0a0a0f' : '#ffffff';
 
       // Wait for UI to update after hiding elements
       await new Promise(resolve => setTimeout(resolve, 200));
@@ -1029,18 +1029,17 @@ export const SystemWiring = () => {
         throw new Error('ReactFlow element not found');
       }
 
-      // Use toSvg first (handles z-index and SVG better), then convert to PNG
+      // Capture the diagram using toSvg which handles stacking/z-index better
       const svgDataUrl = await toSvg(reactFlowEl, {
         backgroundColor: bgColor,
         width: reactFlowEl.offsetWidth,
         height: reactFlowEl.offsetHeight,
-        pixelRatio: 3, // Higher resolution for crisp edges
+        pixelRatio: 2,
         style: {
           transform: 'translateZ(0)',
         },
-        // Include all nodes - don't filter
-        skipFonts: false,
-        fontEmbedCSS: '',
+        skipFonts: true,
+        cacheBust: true,
       });
 
       // Convert SVG to PNG via canvas for better compatibility
