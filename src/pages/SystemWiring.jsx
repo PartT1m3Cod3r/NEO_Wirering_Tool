@@ -990,18 +990,18 @@ export const SystemWiring = () => {
 
     // Store elements that need to be hidden/restored
     const elementsToRestore = [];
-    
+
     try {
       const { toSvg } = await import('html-to-image');
       const container = reactFlowWrapper.current;
 
       // Elements to hide during capture
       const selectorsToHide = [
-        '.diagram-actions',      // Action buttons
-        '.conflict-warning',     // Pin conflict warning banner
-        '.react-flow__controls', // Zoom controls
-        '.react-flow__minimap',  // Mini map
-        '.react-flow__attribution', // Attribution text
+        '.diagram-actions',
+        '.conflict-warning',
+        '.react-flow__controls',
+        '.react-flow__minimap',
+        '.react-flow__attribution',
       ];
 
       // Hide elements and store original display values
@@ -1017,47 +1017,103 @@ export const SystemWiring = () => {
         }
       });
 
-      // Get current theme background color - WHITE for light mode
+      // Get current theme background color
       const isDarkTheme = document.documentElement.getAttribute('data-theme') !== 'light';
-      const bgColor = isDarkTheme ? '#0a0a0f' : '#ffffff';
+      const bgColor = isDarkTheme ? '#0a0a0f' : '#f5f5f7';
 
-      // Wait for UI to update after hiding elements
-      await new Promise(resolve => setTimeout(resolve, 200));
-
+      // Get the viewport element that contains the actual diagram content
       const reactFlowEl = container.querySelector('.react-flow');
-      if (!reactFlowEl) {
-        throw new Error('ReactFlow element not found');
+      const viewportEl = container.querySelector('.react-flow__viewport');
+
+      if (!reactFlowEl || !viewportEl) {
+        throw new Error('ReactFlow elements not found');
       }
 
-      // Capture the diagram using toSvg which handles stacking/z-index better
-      const svgDataUrl = await toSvg(reactFlowEl, {
-        backgroundColor: bgColor,
-        width: reactFlowEl.offsetWidth,
-        height: reactFlowEl.offsetHeight,
-        pixelRatio: 2,
-        style: {
-          transform: 'translateZ(0)',
-        },
-        skipFonts: true,
-        cacheBust: true,
+      // Calculate the bounds of all visible content
+      // Get all node elements and find their bounding box
+      const nodeElements = container.querySelectorAll('.react-flow__node');
+      const edgeElements = container.querySelectorAll('.react-flow__edge');
+
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+      // Get transform info from viewport
+      const transform = viewportEl.style.transform;
+      let offsetX = 0, offsetY = 0, scale = 1;
+      const transformMatch = transform.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)\s*scale\(([\d.]+)\)/);
+      if (transformMatch) {
+        offsetX = parseFloat(transformMatch[1]);
+        offsetY = parseFloat(transformMatch[2]);
+        scale = parseFloat(transformMatch[3]);
+      }
+
+      // Calculate bounds from nodes
+      nodeElements.forEach(node => {
+        const rect = node.getBoundingClientRect();
+        const containerRect = reactFlowEl.getBoundingClientRect();
+
+        // Get position relative to the container
+        const x = (rect.left - containerRect.left);
+        const y = (rect.top - containerRect.top);
+        const width = rect.width;
+        const height = rect.height;
+
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x + width);
+        maxY = Math.max(maxY, y + height);
       });
 
-      // Convert SVG to PNG via canvas for better compatibility
+      // Add padding
+      const padding = 50;
+      minX = Math.max(0, minX - padding);
+      minY = Math.max(0, minY - padding);
+      maxX = maxX + padding;
+      maxY = maxY + padding;
+
+      // Use the full container dimensions to capture everything
+      const captureWidth = reactFlowEl.offsetWidth;
+      const captureHeight = reactFlowEl.offsetHeight;
+
+      // Wait for UI to update
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Capture the SVG - edges naturally render under nodes in React Flow
+      // The stacking order is preserved in the export
+      const svgDataUrl = await toSvg(reactFlowEl, {
+        backgroundColor: bgColor,
+        width: captureWidth,
+        height: captureHeight,
+        pixelRatio: 2,
+        style: {
+          overflow: 'visible',
+        },
+        filter: (node) => {
+          // Exclude controls and hidden elements
+          if (node.classList) {
+            if (node.classList.contains('react-flow__controls')) return false;
+            if (node.classList.contains('react-flow__minimap')) return false;
+            if (node.classList.contains('react-flow__attribution')) return false;
+          }
+          return true;
+        }
+      });
+
+      // Convert SVG to PNG
       const img = new Image();
       img.crossOrigin = 'anonymous';
-      
+
       await new Promise((resolve, reject) => {
         img.onload = resolve;
         img.onerror = reject;
         img.src = svgDataUrl;
       });
 
-      // Create canvas and draw image
+      // Create canvas
       const canvas = document.createElement('canvas');
-      const scale = 2; // Final output scale
-      canvas.width = reactFlowEl.offsetWidth * scale;
-      canvas.height = reactFlowEl.offsetHeight * scale;
-      
+      const outputScale = 2;
+      canvas.width = captureWidth * outputScale;
+      canvas.height = captureHeight * outputScale;
+
       const ctx = canvas.getContext('2d');
       ctx.fillStyle = bgColor;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1123,12 +1179,12 @@ export const SystemWiring = () => {
                 onClick={handleSaveDesign}
                 className="action-btn"
                 title="Save Design (JSON)"
-                style={{ 
-                  padding: '8px 12px', 
-                  background: '#00a896', 
-                  color: '#fff', 
-                  border: 'none', 
-                  borderRadius: '4px', 
+                style={{
+                  padding: '8px 12px',
+                  background: '#00a896',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '4px',
                   cursor: 'pointer',
                   fontSize: '13px',
                   fontWeight: '500'
@@ -1140,12 +1196,12 @@ export const SystemWiring = () => {
                 onClick={() => document.getElementById('load-design-input').click()}
                 className="action-btn"
                 title="Load Design (JSON)"
-                style={{ 
-                  padding: '8px 12px', 
-                  background: '#2a2a3a', 
-                  color: '#fff', 
-                  border: '1px solid #444', 
-                  borderRadius: '4px', 
+                style={{
+                  padding: '8px 12px',
+                  background: '#2a2a3a',
+                  color: '#fff',
+                  border: '1px solid #444',
+                  borderRadius: '4px',
                   cursor: 'pointer',
                   fontSize: '13px',
                   fontWeight: '500'
@@ -1164,12 +1220,12 @@ export const SystemWiring = () => {
                 onClick={handleExportCSV}
                 className="action-btn"
                 title="Export Wiring Schedule (CSV)"
-                style={{ 
-                  padding: '8px 12px', 
-                  background: '#4a4a5a', 
-                  color: '#fff', 
-                  border: 'none', 
-                  borderRadius: '4px', 
+                style={{
+                  padding: '8px 12px',
+                  background: '#4a4a5a',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '4px',
                   cursor: 'pointer',
                   fontSize: '13px',
                   fontWeight: '500'
@@ -1181,12 +1237,12 @@ export const SystemWiring = () => {
                 onClick={handleExportImage}
                 className="action-btn export-image-btn"
                 title="Export Diagram as Image (PNG)"
-                style={{ 
-                  padding: '8px 12px', 
-                  background: '#7c4dff', 
-                  color: '#fff', 
-                  border: 'none', 
-                  borderRadius: '4px', 
+                style={{
+                  padding: '8px 12px',
+                  background: '#7c4dff',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '4px',
                   cursor: 'pointer',
                   fontSize: '13px',
                   fontWeight: '500',

@@ -1,4 +1,58 @@
-import { getSmoothStepPath, EdgeLabelRenderer } from 'reactflow';
+import { EdgeLabelRenderer } from 'reactflow';
+
+// Custom path generation that routes edges around nodes
+const getCustomPath = (sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition) => {
+  // Calculate the midpoint
+  const midX = (sourceX + targetX) / 2;
+
+  // Determine offset based on edge direction and handle position
+  // This creates routing that goes around nodes rather than through them
+  const isHorizontal = Math.abs(targetX - sourceX) > Math.abs(targetY - sourceY);
+
+  // Calculate routing offset - push edges further out from nodes
+  const routeOffset = 80; // Distance to route around nodes
+
+  let path;
+
+  if (sourcePosition === 'right' && targetPosition === 'left') {
+    // Standard left-to-right connection (Neo -> Device)
+    // Route: source -> right offset -> vertical to target Y -> target
+    const offsetX = Math.max(sourceX + routeOffset, midX);
+    path = `M ${sourceX} ${sourceY} 
+            L ${offsetX} ${sourceY} 
+            L ${offsetX} ${targetY} 
+            L ${targetX} ${targetY}`;
+  } else if (sourcePosition === 'left' && targetPosition === 'right') {
+    // Right-to-left connection (Device -> Neo for power inputs)
+    const offsetX = Math.min(sourceX - routeOffset, midX);
+    path = `M ${sourceX} ${sourceY} 
+            L ${offsetX} ${sourceY} 
+            L ${offsetX} ${targetY} 
+            L ${targetX} ${targetY}`;
+  } else if (sourcePosition === 'right' && targetPosition === 'right') {
+    // Both on right side - route around the right
+    const maxX = Math.max(sourceX, targetX) + routeOffset;
+    path = `M ${sourceX} ${sourceY} 
+            L ${maxX} ${sourceY} 
+            L ${maxX} ${targetY} 
+            L ${targetX} ${targetY}`;
+  } else if (sourcePosition === 'left' && targetPosition === 'left') {
+    // Both on left side - route around the left
+    const minX = Math.min(sourceX, targetX) - routeOffset;
+    path = `M ${sourceX} ${sourceY} 
+            L ${minX} ${sourceY} 
+            L ${minX} ${targetY} 
+            L ${targetX} ${targetY}`;
+  } else {
+    // Fallback - simple step path with offset
+    path = `M ${sourceX} ${sourceY} 
+            L ${midX} ${sourceY} 
+            L ${midX} ${targetY} 
+            L ${targetX} ${targetY}`;
+  }
+
+  return path;
+};
 
 export const ColoredWireEdge = ({
   id,
@@ -14,15 +68,8 @@ export const ColoredWireEdge = ({
   markerEnd,
   data,
 }) => {
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-    borderRadius: 15,
-  });
+  // Generate custom path that routes around nodes
+  const edgePath = getCustomPath(sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition);
 
   const { label, color = '#e0e0e0' } = data || {};
 
@@ -55,6 +102,8 @@ export const ColoredWireEdge = ({
           stroke: color,
           strokeWidth: 3,
           strokeLinecap: 'round',
+          strokeLinejoin: 'round',
+          fill: 'none',
         }}
         className="react-flow__edge-path"
         d={edgePath}
