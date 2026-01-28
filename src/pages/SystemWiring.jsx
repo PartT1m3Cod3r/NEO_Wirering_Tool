@@ -755,17 +755,21 @@ export const SystemWiring = () => {
       deviceTemplate.plugType === 'communications' ? 350 : 650;
 
     // Determine node type: battery for power-input, latchingRelay for latching, relay for other outputs, sensor for others
+    const isPowerInput = deviceTemplate.type === 'power-input';
     const getNodeType = () => {
-      if (deviceTemplate.type === 'power-input') return 'battery';
+      if (isPowerInput) return 'battery';
       if (deviceTemplate.type === 'latching') return 'latchingRelay';
       if (deviceTemplate.plugType === 'outputs') return 'relay';
       return 'sensor';
     };
 
+    // Power input nodes shifted 15px left
+    const xOffset = isPowerInput ? 385 : 400;
+
     const newNode = {
       id: newDevice.id,
       type: getNodeType(),
-      position: { x: 400 + (deviceCount * 50), y: yOffset + (deviceCount * 30) },
+      position: { x: xOffset + (deviceCount * 50), y: yOffset + (deviceCount * 30) },
       data: {
         label: newDevice.label,
         sensorType: newDevice.type,
@@ -921,17 +925,21 @@ export const SystemWiring = () => {
                 device.plugType === 'communications' ? 350 : 650;
 
               // Determine node type
+              const isPowerInput = device.type === 'power-input';
               const getNodeType = () => {
-                if (device.type === 'power-input') return 'battery';
+                if (isPowerInput) return 'battery';
                 if (device.type === 'latching') return 'latchingRelay';
                 if (device.plugType === 'outputs') return 'relay';
                 return 'sensor';
               };
 
+              // Power input nodes shifted 15px left
+              const xOffset = isPowerInput ? 385 : 400;
+
               const newNode = {
                 id: device.id,
                 type: getNodeType(),
-                position: { x: 400 + (deviceCount * 50), y: yOffset + (deviceCount * 30) },
+                position: { x: xOffset + (deviceCount * 50), y: yOffset + (deviceCount * 30) },
                 data: {
                   label: device.label,
                   sensorType: device.type,
