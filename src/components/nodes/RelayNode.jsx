@@ -1,12 +1,12 @@
 import { Handle, Position } from 'reactflow';
 
 export const RelayNode = ({ data }) => {
-  const { outputNumber, terminals } = data;
+  const { label, outputNumber, terminals } = data;
 
   return (
     <div className="relay-node">
       <div className="node-header">
-        <h4>Relay</h4>
+        <h4>{label || 'Relay'}</h4>
       </div>
       <svg width="200" height="180" viewBox="0 0 200 180">
         {/* Relay body - Clean dark background */}
