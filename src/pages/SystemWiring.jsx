@@ -194,11 +194,6 @@ export const SystemWiring = () => {
   const [pinConflicts, setPinConflicts] = useState([]);
   const reactFlowWrapper = useRef(null);
 
-  // Recalculate pin conflicts whenever connectedDevices changes
-  useEffect(() => {
-    checkConflicts(connectedDevices);
-  }, [connectedDevices, checkConflicts]);
-
   // Update Neo Device nodes based on connected devices
   useEffect(() => {
     const inputs = connectedDevices.filter(d => d.plugType === 'inputs');
@@ -341,6 +336,11 @@ export const SystemWiring = () => {
     setPinConflicts(conflicts);
     return conflicts;
   }, []);
+
+  // Recalculate pin conflicts whenever connectedDevices changes
+  useEffect(() => {
+    checkConflicts(connectedDevices);
+  }, [connectedDevices, checkConflicts]);
 
   // Add a new device
   const addDevice = useCallback((deviceTemplate) => {
