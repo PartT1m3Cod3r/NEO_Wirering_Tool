@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react-swc'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
+// For GitHub Pages deployment, uncomment the base line below and set to your repo name
+// base: '/NEO_Wirering_Tool/',
+
 export default defineConfig({
   plugins: [
     react(),
