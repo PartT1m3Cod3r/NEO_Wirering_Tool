@@ -194,6 +194,11 @@ export const SystemWiring = () => {
   const [pinConflicts, setPinConflicts] = useState([]);
   const reactFlowWrapper = useRef(null);
 
+  // Recalculate pin conflicts whenever connectedDevices changes
+  useEffect(() => {
+    checkConflicts(connectedDevices);
+  }, [connectedDevices, checkConflicts]);
+
   // Update Neo Device nodes based on connected devices
   useEffect(() => {
     const inputs = connectedDevices.filter(d => d.plugType === 'inputs');
@@ -746,13 +751,18 @@ export const SystemWiring = () => {
 
   // Remove a device
   const removeDevice = useCallback((deviceId) => {
-    setConnectedDevices((prev) => prev.filter(d => d.id !== deviceId));
+    setConnectedDevices((prev) => {
+      const updated = prev.filter(d => d.id !== deviceId);
+      // Recheck conflicts after removal
+      checkConflicts(updated);
+      return updated;
+    });
     setNodes((prev) => prev.filter(n => n.id !== deviceId));
-    setEdges((prev) => prev.filter(e => e.target !== deviceId));
+    setEdges((prev) => prev.filter(e => e.target !== deviceId && e.source !== deviceId));
     if (selectedDevice?.id === deviceId) {
       setSelectedDevice(null);
     }
-  }, [selectedDevice, setNodes, setEdges]);
+  }, [selectedDevice, setNodes, setEdges, checkConflicts]);
 
   // Update device configuration
   const updateDevice = useCallback((deviceId, updates) => {
