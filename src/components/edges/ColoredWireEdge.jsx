@@ -82,8 +82,8 @@ export const ColoredWireEdge = ({
   // - Other devices: near Neo (target side) - right side
   let shiftedX, shiftedY;
   if (isPowerInput) {
-    // Position near battery (source)
-    const xOffset = sourcePosition === 'left' ? -35 : 35;
+    // Position near battery (source) - shifted 20px more to the left
+    const xOffset = sourcePosition === 'left' ? -55 : 35;
     shiftedX = sourceX + xOffset;
     shiftedY = sourceY;
   } else {
