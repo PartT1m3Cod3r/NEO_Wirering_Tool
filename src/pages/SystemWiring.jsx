@@ -996,15 +996,34 @@ export const SystemWiring = () => {
         }
       });
 
-      // Wait a moment for the UI to update
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Temporarily remove filters from edges (html2canvas has issues with SVG filters)
+      const edgePaths = container.querySelectorAll('.react-flow__edge-path');
+      const originalFilters = [];
+      edgePaths.forEach((path, idx) => {
+        originalFilters[idx] = path.style.filter;
+        path.style.filter = 'none';
+      });
+
+      // Get current theme background color
+      const isDarkTheme = document.documentElement.getAttribute('data-theme') !== 'light';
+      const bgColor = isDarkTheme ? '#0a0a0f' : '#f5f5f7';
+
+      // Wait for the UI to update and ReactFlow to fully render
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       // Capture the diagram
       const canvas = await html2canvas(container, {
-        backgroundColor: '#0a0a0f',
+        backgroundColor: bgColor,
         scale: 2,
         logging: false,
         useCORS: true,
+        allowTaint: true,
+        foreignObjectRendering: false,
+      });
+
+      // Restore filters
+      edgePaths.forEach((path, idx) => {
+        path.style.filter = originalFilters[idx] || '';
       });
 
       // Restore overlays
