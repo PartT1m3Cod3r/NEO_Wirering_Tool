@@ -78,15 +78,15 @@ export const ColoredWireEdge = ({
               alignItems: 'center',
             }}>
               <span style={{
-                backgroundColor: '#1a1a2e',
-                color: color,
+                backgroundColor: 'var(--bg-secondary)',
+                color: 'var(--text-primary)',
                 padding: '2px 6px',
                 borderRadius: '4px',
                 fontSize: '10px',
                 fontWeight: '600',
-                border: `1px solid ${color}`,
+                border: `2px solid ${color}`,
                 whiteSpace: 'nowrap',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.5)'
+                boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
               }}>
                 {label}
               </span>

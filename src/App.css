@@ -10,9 +10,10 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+  background: var(--bg-primary);
   min-height: 100vh;
-  color: #e0e0e0;
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .app {
@@ -22,25 +23,25 @@ body {
 }
 
 .app-header {
-  background: rgba(10, 10, 10, 0.9);
-  border: 1px solid #00a896;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 30px;
   margin-bottom: 30px;
-  box-shadow: 0 8px 32px rgba(0, 168, 150, 0.3);
+  box-shadow: 0 8px 32px var(--shadow-color);
   text-align: center;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .app-header h1 {
-  color: #00a896;
+  color: var(--accent-color);
   font-size: 2.5em;
   margin-bottom: 10px;
   font-weight: 700;
-  text-shadow: 0 0 10px rgba(0, 168, 150, 0.5);
 }
 
 .app-header p {
-  color: #a0a0a0;
+  color: var(--text-secondary);
   font-size: 1.1em;
 }
 
@@ -52,17 +53,18 @@ body {
 }
 
 .dropdown-group {
-  background: rgba(10, 10, 10, 0.8);
-  border: 1px solid #00a896;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 8px 32px rgba(0, 168, 150, 0.2);
+  box-shadow: 0 8px 32px var(--shadow-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .dropdown-group label {
   display: block;
   font-weight: 600;
-  color: #00a896;
+  color: var(--accent-color);
   margin-bottom: 10px;
   font-size: 1.1em;
 }
@@ -71,22 +73,22 @@ select {
   width: 100%;
   padding: 12px;
   font-size: 16px;
-  border: 2px solid #2a2a3a;
+  border: 2px solid var(--input-border);
   border-radius: 8px;
-  background-color: #1a1a2e;
-  color: #e0e0e0;
+  background-color: var(--input-bg);
+  color: var(--text-primary);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 select:hover {
-  border-color: #00a896;
+  border-color: var(--accent-color);
 }
 
 select:focus {
   outline: none;
-  border-color: #00a896;
-  box-shadow: 0 0 0 3px rgba(0, 168, 150, 0.2);
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px var(--shadow-color);
 }
 
 select:disabled {
@@ -95,33 +97,34 @@ select:disabled {
 }
 
 .plug-display-container {
-  background: rgba(10, 10, 10, 0.8);
-  border: 1px solid #00a896;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 30px;
   margin-bottom: 30px;
-  box-shadow: 0 8px 32px rgba(0, 168, 150, 0.2);
+  box-shadow: 0 8px 32px var(--shadow-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .plug-container h3 {
   text-align: center;
   margin-bottom: 20px;
   font-size: 1.8em;
-  color: #00a896;
+  color: var(--accent-color);
 }
 
 .plug {
   max-width: 600px;
   margin: 0 auto;
-  border: 3px solid #333;
+  border: 3px solid var(--border-secondary);
   border-radius: 15px;
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 .plug-header {
-  background: #333;
-  color: white;
+  background: var(--border-secondary);
+  color: var(--text-primary);
   padding: 15px;
   text-align: center;
   font-weight: 600;
@@ -133,24 +136,24 @@ select:disabled {
   grid-template-columns: 60px 120px 1fr;
   align-items: center;
   padding: 15px;
-  border-bottom: 1px solid #2a2a3a;
-  background: #1a1a2e;
+  border-bottom: 1px solid var(--border-secondary);
+  background: var(--bg-secondary);
   transition: background 0.2s ease;
 }
 
 .pin-row:hover {
-  background: #2a2a3a;
+  background: var(--border-secondary);
 }
 
 .pin-number {
   font-weight: 700;
   font-size: 1.2em;
-  color: #00a896;
+  color: var(--accent-color);
   text-align: center;
   padding: 8px;
-  background: #0f0f23;
+  background: var(--bg-tertiary);
   border-radius: 4px;
-  border: 1px solid #2a2a3a;
+  border: 1px solid var(--border-secondary);
 }
 
 .pin-color {
@@ -163,29 +166,30 @@ select:disabled {
   min-width: 100px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  color: #1a1a2e;
+  color: var(--bg-secondary);
 }
 
 .pin-function {
-  color: #e0e0e0;
+  color: var(--text-primary);
   font-weight: 500;
   padding: 10px;
 }
 
 .legend {
-  background: rgba(10, 10, 10, 0.8);
-  border: 1px solid #00a896;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 25px;
   margin-bottom: 30px;
-  box-shadow: 0 8px 32px rgba(0, 168, 150, 0.2);
+  box-shadow: 0 8px 32px var(--shadow-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .legend h3 {
   text-align: center;
   margin-bottom: 20px;
   font-size: 1.5em;
-  color: #00a896;
+  color: var(--accent-color);
 }
 
 .legend-items {
@@ -212,25 +216,26 @@ select:disabled {
 .legend-item span {
   font-size: 0.9em;
   font-weight: 600;
-  color: #e0e0e0;
+  color: var(--text-primary);
   text-transform: capitalize;
 }
 
 /* Wiring Diagram Styles */
 .wiring-diagram-container {
-  background: rgba(10, 10, 10, 0.8);
-  border: 1px solid #00a896;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 30px;
   margin-bottom: 30px;
-  box-shadow: 0 8px 32px rgba(0, 168, 150, 0.2);
+  box-shadow: 0 8px 32px var(--shadow-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .wiring-diagram h3 {
   text-align: center;
   margin-bottom: 30px;
   font-size: 1.8em;
-  color: #00a896;
+  color: var(--accent-color);
 }
 
 .diagram-container {
@@ -244,21 +249,20 @@ select:disabled {
 
 .neo-device,
 .external-device {
-  background: #1a1a2e;
-  border: 2px solid #00a896;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
   border-radius: 12px;
   padding: 20px;
   min-width: 200px;
-  box-shadow: 0 4px 12px rgba(0, 168, 150, 0.2);
+  box-shadow: 0 4px 12px var(--shadow-color);
 }
 
 .neo-device h4,
 .external-device h4 {
   text-align: center;
   margin-bottom: 15px;
-  color: #00a896;
+  color: var(--accent-color);
   font-size: 1.2em;
-  text-shadow: 0 0 5px rgba(0, 168, 150, 0.3);
 }
 
 .neo-plug {
@@ -272,7 +276,7 @@ select:disabled {
   border-radius: 8px;
   text-align: center;
   font-weight: 600;
-  color: #1a1a2e;
+  color: var(--bg-secondary);
   font-size: 0.85em;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   border: 2px solid transparent;
@@ -329,27 +333,27 @@ select:disabled {
 
 .terminal,
 .wire-connector {
-  background: #2a2a3a;
-  border: 2px solid #00a896;
+  background: var(--border-secondary);
+  border: 2px solid var(--border-color);
   border-radius: 6px;
   padding: 10px;
   min-width: 80px;
   text-align: center;
   font-weight: 600;
-  color: #e0e0e0;
+  color: var(--text-primary);
   font-size: 0.9em;
 }
 
 .sensor-body {
-  background: #e0e0e0;
+  background: var(--text-primary);
   border-radius: 20px;
   padding: 15px;
   margin: 10px 0;
 }
 
 .connection-instructions {
-  background: #1a1a2e;
-  border: 1px solid #00a896;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 25px;
   margin-top: 30px;
@@ -357,7 +361,7 @@ select:disabled {
 
 .connection-instructions h4 {
   margin-bottom: 15px;
-  color: #00a896;
+  color: var(--accent-color);
   font-size: 1.3em;
 }
 
@@ -368,21 +372,21 @@ select:disabled {
 .connection-instructions li {
   margin-bottom: 10px;
   line-height: 1.6;
-  color: #b0b0b0;
+  color: var(--text-secondary);
   font-size: 1em;
 }
 
 .connection-instructions strong {
-  color: #00a896;
+  color: var(--accent-color);
 }
 
 .diagram-placeholder {
   text-align: center;
   padding: 40px;
-  background: #1a1a2e;
-  border: 1px solid #2a2a3a;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
   border-radius: 12px;
-  color: #a0a0a0;
+  color: var(--text-secondary);
   font-size: 1.1em;
 }
 
@@ -390,8 +394,8 @@ select:disabled {
 .reactflow-container {
   width: 100%;
   height: 500px;
-  background: #0a0a0a;
-  border: 1px solid #00a896;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -401,10 +405,10 @@ select:disabled {
   align-items: center;
   justify-content: center;
   height: 500px;
-  background: #1a1a2e;
-  border: 1px solid #2a2a3a;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
   border-radius: 12px;
-  color: #a0a0a0;
+  color: var(--text-secondary);
   font-size: 1.2em;
 }
 
@@ -412,12 +416,12 @@ select:disabled {
 .neo-device-node,
 .sensor-node,
 .relay-node {
-  background: rgba(26, 26, 46, 0.9);
-  border: 2px solid #00a896;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
   border-radius: 12px;
   padding: 10px;
   min-width: 220px;
-  box-shadow: 0 4px 20px rgba(0, 168, 150, 0.3);
+  box-shadow: 0 4px 20px var(--shadow-color);
 }
 
 .node-header {
@@ -426,50 +430,49 @@ select:disabled {
 }
 
 .node-header h4 {
-  color: #00a896;
+  color: var(--accent-color);
   font-size: 1.1em;
   margin: 0;
-  text-shadow: 0 0 5px rgba(0, 168, 150, 0.5);
 }
 
-/* React Flow Controls Dark Theme */
+/* React Flow Controls Theme */
 .react-flow__controls {
-  background: rgba(10, 10, 10, 0.9);
-  border: 1px solid #00a896;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   overflow: hidden;
 }
 
 .react-flow__controls-button {
-  background: #1a1a2e;
+  background: var(--bg-secondary);
   border: none;
-  border-bottom: 1px solid #2a2a3a;
-  color: #e0e0e0;
+  border-bottom: 1px solid var(--border-secondary);
+  color: var(--text-primary);
   transition: all 0.2s ease;
 }
 
 .react-flow__controls-button:hover {
-  background: #2a2a3a;
+  background: var(--border-secondary);
 }
 
 .react-flow__controls-button svg {
-  fill: #00a896;
+  fill: var(--accent-color);
 }
 
 .react-flow__minimap {
-  background: rgba(10, 10, 10, 0.9);
-  border: 1px solid #00a896;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
 }
 
 .react-flow__attribution {
-  background: rgba(10, 10, 10, 0.8);
-  color: #a0a0a0;
+  background: var(--card-bg);
+  color: var(--text-secondary);
   font-size: 10px;
 }
 
 .react-flow__attribution a {
-  color: #00a896;
+  color: var(--accent-color);
 }
 
 /* Custom Edge Styles */
@@ -482,8 +485,8 @@ select:disabled {
   border-radius: 50%;
   width: 12px;
   height: 12px;
-  border: 2px solid #00a896 !important;
-  box-shadow: 0 0 5px rgba(0, 168, 150, 0.5);
+  border: 2px solid var(--border-color) !important;
+  box-shadow: 0 0 5px var(--shadow-color);
 }
 
 .react-flow__handle-bottom,
@@ -519,8 +522,8 @@ select:disabled {
 .app-footer {
   text-align: center;
   padding: 20px;
-  color: white;
-  background: rgba(0, 0, 0, 0.2);
+  color: var(--text-primary);
+  background: var(--bg-secondary);
   border-radius: 12px;
   margin-top: 20px;
 }

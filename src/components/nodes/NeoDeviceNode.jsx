@@ -11,11 +11,11 @@ export const NeoDeviceNode = ({ data }) => {
       <div style={{ padding: '10px', display: 'flex', justifyContent: 'center', position: 'relative' }}>
         <svg width="140" height="140" viewBox="0 0 140 140">
           {/* M12 Connector Shell */}
-          <circle cx="70" cy="70" r="60" fill="#1a1a2e" stroke="#00a896" strokeWidth="3" />
-          <circle cx="70" cy="70" r="50" fill="none" stroke="#2a2a3a" strokeWidth="1" strokeDasharray="4 2" />
+          <circle cx="70" cy="70" r="60" fill="var(--bg-secondary)" stroke="var(--accent-color)" strokeWidth="3" />
+          <circle cx="70" cy="70" r="50" fill="none" stroke="var(--border-secondary)" strokeWidth="1" strokeDasharray="4 2" />
 
           {/* Keyway Notch (approximate for visual reference) */}
-          <path d="M 65 14 Q 70 18 75 14" stroke="#00a896" strokeWidth="2" fill="none" />
+          <path d="M 65 14 Q 70 18 75 14" stroke="var(--accent-color)" strokeWidth="2" fill="none" />
 
           {/* 8 Pins (Standard M12-8 Pinout) */}
           {/* 1 - White */}
@@ -62,7 +62,7 @@ export const NeoDeviceNode = ({ data }) => {
             top: 40,
             right: -5,
             backgroundColor: '#FFFFFF',
-            border: '2px solid #1a1a2e',
+            border: '2px solid var(--bg-secondary)',
             width: '10px',
             height: '10px'
           }}
@@ -75,7 +75,7 @@ export const NeoDeviceNode = ({ data }) => {
             top: 70,
             right: -5,
             backgroundColor: '#8B4513',
-            border: '2px solid #1a1a2e',
+            border: '2px solid var(--bg-secondary)',
             width: '10px',
             height: '10px'
           }}
@@ -92,7 +92,7 @@ export const NeoDeviceNode = ({ data }) => {
               top: 30 + (idx * 20),
               right: -5,
               backgroundColor: output.color,
-              border: '2px solid #1a1a2e',
+              border: '2px solid var(--bg-secondary)',
               width: '10px',
               height: '10px'
             }}

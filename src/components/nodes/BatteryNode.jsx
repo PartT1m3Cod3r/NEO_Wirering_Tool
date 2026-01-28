@@ -16,8 +16,8 @@ export const BatteryNode = ({ data }) => {
           width="90" 
           height="60" 
           rx="6" 
-          fill="#1a1a2e" 
-          stroke="#00a896" 
+          fill="var(--bg-secondary)" 
+          stroke="var(--accent-color)" 
           strokeWidth="2" 
         />
         
@@ -27,7 +27,7 @@ export const BatteryNode = ({ data }) => {
           y="20" 
           width="20" 
           height="10" 
-          fill="#00a896"
+          fill="var(--accent-color)"
         />
         
         {/* Battery negative terminal (bottom) - shorter */}
@@ -43,7 +43,7 @@ export const BatteryNode = ({ data }) => {
         <text 
           x="75" 
           y="58" 
-          fill="#00a896" 
+          fill="var(--accent-color)" 
           fontSize="24" 
           fontWeight="700" 
           textAnchor="middle"
@@ -55,7 +55,7 @@ export const BatteryNode = ({ data }) => {
         <text 
           x="75" 
           y="78" 
-          fill="#00a896" 
+          fill="var(--accent-color)" 
           fontSize="10" 
           fontWeight="500" 
           textAnchor="middle"
@@ -74,7 +74,7 @@ export const BatteryNode = ({ data }) => {
           left: -5,
           top: 45,
           backgroundColor: '#FFFFFF',
-          border: '2px solid #1a1a2e',
+          border: '2px solid var(--bg-secondary)',
           width: '10px',
           height: '10px'
         }}
@@ -87,7 +87,7 @@ export const BatteryNode = ({ data }) => {
           left: -5,
           top: 75,
           backgroundColor: '#8B4513',
-          border: '2px solid #1a1a2e',
+          border: '2px solid var(--bg-secondary)',
           width: '10px',
           height: '10px'
         }}

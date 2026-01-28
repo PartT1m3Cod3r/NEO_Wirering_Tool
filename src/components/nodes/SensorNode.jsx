@@ -33,13 +33,13 @@ export const SensorNode = ({ data }) => {
       </div>
       <svg width="180" height="200" viewBox="0 0 180 200">
         {/* Sensor body - rectangular shape, clean style */}
-        <rect x="50" y="30" width="80" height="120" rx="4" fill="#1a1a2e" stroke="#00a896" strokeWidth="2" />
+        <rect x="50" y="30" width="80" height="120" rx="4" fill="var(--bg-secondary)" stroke="var(--accent-color)" strokeWidth="2" />
 
         {/* Sensor tip */}
-        <circle cx="90" cy="160" r="8" fill="#00a896" opacity="0.8" />
+        <circle cx="90" cy="160" r="8" fill="var(--accent-color)" opacity="0.8" />
 
         {/* Sensor label centered in rectangle */}
-        <text x="90" y="90" fill="#00a896" fontSize="14" fontWeight="700" textAnchor="middle">
+        <text x="90" y="90" fill="var(--accent-color)" fontSize="14" fontWeight="700" textAnchor="middle">
           {sensorLabel}
         </text>
       </svg>
@@ -58,7 +58,7 @@ export const SensorNode = ({ data }) => {
               [isPowerSource ? 'right' : 'left']: -5,
               top: topPos,
               backgroundColor: terminal.color,
-              border: '2px solid #1a1a2e',
+              border: '2px solid var(--bg-secondary)',
               width: '10px',
               height: '10px',
               zIndex: 10
