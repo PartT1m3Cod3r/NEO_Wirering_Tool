@@ -26,25 +26,11 @@ export const ColoredWireEdge = ({
 
   const { label, color = '#e0e0e0' } = data || {};
 
-  // Detect if this is a power input edge (battery -> neo)
-  // Power input edges have source as device-* and target as neo-*
-  const isPowerInput = source && target && source.startsWith('device-') && target.startsWith('neo-');
-
-  // Position labels:
-  // - Power input: near battery (source side)
-  // - Other devices: near Neo (target side)
-  let shiftedX, shiftedY;
-  if (isPowerInput) {
-    // Position near battery (source)
-    const xOffset = sourcePosition === 'left' ? -35 : 35;
-    shiftedX = sourceX + xOffset;
-    shiftedY = sourceY;
-  } else {
-    // Position near Neo device (target)
-    const xOffset = targetPosition === 'right' ? 55 : -35;
-    shiftedX = targetX + xOffset;
-    shiftedY = targetY;
-  }
+  // Position all labels at the device side (source) for consistency
+  // This puts labels near the device being connected, not the Neo device
+  const xOffset = sourcePosition === 'left' ? -35 : 35;
+  const shiftedX = sourceX + xOffset;
+  const shiftedY = sourceY;
 
   return (
     <>
