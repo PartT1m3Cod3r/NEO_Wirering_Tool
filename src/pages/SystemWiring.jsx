@@ -343,29 +343,61 @@ export const SystemWiring = () => {
 
   // Add a new device
   const addDevice = useCallback((deviceTemplate) => {
-    // Find next available channel/output/input
-    const nextAvailable = findNextAvailable(deviceTemplate, connectedDevices);
+    // Get all available options
+    const availableOptions = deviceTemplate.channels || deviceTemplate.outputs || deviceTemplate.inputs || [];
 
-    const newDevice = {
-      id: `device-${Date.now()}`,
-      ...deviceTemplate,
-      channel: deviceTemplate.channels ? nextAvailable : null,
-      output: deviceTemplate.outputs ? nextAvailable : null,
-      input: deviceTemplate.inputs ? nextAvailable : null,
-      powerSource: deviceTemplate.powerSource ? deviceTemplate.powerSource[0] : null,
-      label: deviceTemplate.label,
-    };
+    // Try each option until we find one without conflicts
+    let selectedOption = null;
+    let newDevice = null;
+    let conflicts = [];
 
-    // Check for conflicts before adding
-    const tempDevices = [...connectedDevices, newDevice];
-    const conflicts = checkConflicts(tempDevices);
+    for (const option of availableOptions) {
+      // Create a test device with this option
+      const testDevice = {
+        id: `device-${Date.now()}`,
+        ...deviceTemplate,
+        channel: deviceTemplate.channels ? option : null,
+        output: deviceTemplate.outputs ? option : null,
+        input: deviceTemplate.inputs ? option : null,
+        powerSource: deviceTemplate.powerSource ? deviceTemplate.powerSource[0] : null,
+        label: deviceTemplate.label,
+      };
 
-    if (conflicts.length > 0) {
-      const conflictPins = conflicts.map(c => `${c.plugType} Pin ${c.pin}`).join(', ');
-      alert(`Warning: Pin conflict detected on: ${conflictPins}`);
+      // Check for conflicts with this configuration
+      const tempDevices = [...connectedDevices, testDevice];
+      conflicts = checkConflicts(tempDevices);
+
+      if (conflicts.length === 0) {
+        // No conflict - use this option
+        selectedOption = option;
+        newDevice = testDevice;
+        break;
+      }
     }
 
-    setConnectedDevices(tempDevices);
+    // If all options have conflicts, use the first available and warn
+    if (!newDevice) {
+      const firstOption = findNextAvailable(deviceTemplate, connectedDevices);
+      newDevice = {
+        id: `device-${Date.now()}`,
+        ...deviceTemplate,
+        channel: deviceTemplate.channels ? firstOption : null,
+        output: deviceTemplate.outputs ? firstOption : null,
+        input: deviceTemplate.inputs ? firstOption : null,
+        powerSource: deviceTemplate.powerSource ? deviceTemplate.powerSource[0] : null,
+        label: deviceTemplate.label,
+      };
+
+      const tempDevices = [...connectedDevices, newDevice];
+      conflicts = checkConflicts(tempDevices);
+
+      if (conflicts.length > 0) {
+        const conflictPins = conflicts.map(c => `${c.plugType} Pin ${c.pin}`).join(', ');
+        alert(`Warning: All pins are in use! Conflict detected on: ${conflictPins}`);
+      }
+    }
+
+    setConnectedDevices(prev => [...prev, newDevice]);
 
     // Create node for the device
     const deviceCount = connectedDevices.filter(d => d.plugType === deviceTemplate.plugType).length;
@@ -816,6 +848,40 @@ export const SystemWiring = () => {
     }
   }, [connectedDevices]);
 
+  // Custom handler for node changes that also syncs connectedDevices when nodes are deleted
+  const handleNodesChange = useCallback((changes) => {
+    // First, apply the standard node changes
+    onNodesChange(changes);
+
+    // Check for removed nodes (when user deletes a device)
+    const removedNodeIds = changes
+      .filter(change => change.type === 'remove')
+      .map(change => change.id);
+
+    if (removedNodeIds.length > 0) {
+      // Filter out system nodes (neo-*) - those shouldn't affect connectedDevices
+      const removedDeviceIds = removedNodeIds.filter(id => id.startsWith('device-'));
+
+      if (removedDeviceIds.length > 0) {
+        // Remove the deleted devices from connectedDevices
+        setConnectedDevices(prev => {
+          const updated = prev.filter(d => !removedDeviceIds.includes(d.id));
+          return updated;
+        });
+
+        // Clear selected device if it was deleted
+        if (selectedDevice && removedDeviceIds.includes(selectedDevice.id)) {
+          setSelectedDevice(null);
+        }
+
+        // Also remove edges connected to deleted nodes
+        setEdges(prev => prev.filter(e =>
+          !removedDeviceIds.includes(e.source) && !removedDeviceIds.includes(e.target)
+        ));
+      }
+    }
+  }, [onNodesChange, setEdges, selectedDevice]);
+
   // Export Design as JSON
   const handleSaveDesign = () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(connectedDevices, null, 2));
@@ -1155,7 +1221,7 @@ export const SystemWiring = () => {
           <ReactFlow
             nodes={nodes}
             edges={edges}
-            onNodesChange={onNodesChange}
+            onNodesChange={handleNodesChange}
             onEdgesChange={onEdgesChange}
             onNodeClick={onNodeClick}
             nodeTypes={nodeTypes}
