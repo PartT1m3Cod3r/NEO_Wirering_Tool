@@ -992,12 +992,12 @@ export const SystemWiring = () => {
     const elementsToRestore = [];
     
     try {
-      const { toPng } = await import('html-to-image');
+      const { toSvg } = await import('html-to-image');
       const container = reactFlowWrapper.current;
 
       // Elements to hide during capture
       const selectorsToHide = [
-        '.diagram-actions',      // Action buttons (Export, Save, etc.)
+        '.diagram-actions',      // Action buttons
         '.conflict-warning',     // Pin conflict warning banner
         '.react-flow__controls', // Zoom controls
         '.react-flow__minimap',  // Mini map
@@ -1022,34 +1022,50 @@ export const SystemWiring = () => {
       const bgColor = isDarkTheme ? '#0a0a0f' : '#f5f5f7';
 
       // Wait for UI to update after hiding elements
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise(resolve => setTimeout(resolve, 200));
 
       const reactFlowEl = container.querySelector('.react-flow');
       if (!reactFlowEl) {
         throw new Error('ReactFlow element not found');
       }
 
-      // Capture the diagram
-      const dataUrl = await toPng(reactFlowEl, {
+      // Use toSvg first (handles z-index and SVG better), then convert to PNG
+      const svgDataUrl = await toSvg(reactFlowEl, {
         backgroundColor: bgColor,
         width: reactFlowEl.offsetWidth,
         height: reactFlowEl.offsetHeight,
-        pixelRatio: 2, // Higher resolution
+        pixelRatio: 3, // Higher resolution for crisp edges
         style: {
-          transform: 'translateZ(0)', // Force GPU rendering
+          transform: 'translateZ(0)',
         },
-        filter: (node) => {
-          // Skip control elements
-          if (node.classList) {
-            if (node.classList.contains('react-flow__controls')) return false;
-            if (node.classList.contains('react-flow__minimap')) return false;
-            if (node.classList.contains('react-flow__attribution')) return false;
-          }
-          return true;
-        }
+        // Include all nodes - don't filter
+        skipFonts: false,
+        fontEmbedCSS: '',
       });
 
-      // Download the image
+      // Convert SVG to PNG via canvas for better compatibility
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = svgDataUrl;
+      });
+
+      // Create canvas and draw image
+      const canvas = document.createElement('canvas');
+      const scale = 2; // Final output scale
+      canvas.width = reactFlowEl.offsetWidth * scale;
+      canvas.height = reactFlowEl.offsetHeight * scale;
+      
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = bgColor;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // Download as PNG
+      const dataUrl = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       const timestamp = new Date().toISOString().slice(0, 10);
       link.href = dataUrl;
