@@ -24,7 +24,12 @@ export const RelayNode = ({ data }) => {
 
       {/* React Flow Handles */}
       {terminals && terminals.map((terminal, idx) => {
-        const topPos = 50 + (idx * 40);
+        const positions = [
+          { x: 15, y: 50 },   // Top
+          { x: 15, y: 90 }    // Bottom
+        ];
+
+        const pos = positions[idx] || { x: 15, y: 50 };
 
         return (
           <Handle
@@ -33,8 +38,8 @@ export const RelayNode = ({ data }) => {
             position={Position.Left}
             id={terminal.id}
             style={{
-              left: -5,
-              top: topPos,
+              left: pos.x,
+              top: pos.y,
               backgroundColor: terminal.color,
               border: '2px solid #1a1a2e',
               width: '10px',

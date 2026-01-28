@@ -559,6 +559,7 @@ export const SystemWiring = () => {
       } else if (device.type === 'latching') {
         const outputColors = device.output === 1 ? ['grey', 'pink'] : ['blue', 'red'];
         const pinMap = device.output === 1 ? ['pin-5', 'pin-6'] : ['pin-7', 'pin-8'];
+        const outputLabels = device.output === 1 ? ['Output 1', 'Output 2'] : ['Output 3', 'Output 4'];
 
         edges.push({
           id: `${edgeId}-a1`,
@@ -567,7 +568,7 @@ export const SystemWiring = () => {
           sourceHandle: pinMap[0],
           targetHandle: 'a1',
           type: 'coloredWire',
-          data: { label: 'A1', color: colorMap[outputColors[0]] },
+          data: { label: outputLabels[0], color: colorMap[outputColors[0]] },
           markerEnd: { type: MarkerType.ArrowClosed, color: colorMap[outputColors[0]] },
         });
         edges.push({
@@ -577,7 +578,7 @@ export const SystemWiring = () => {
           sourceHandle: pinMap[1],
           targetHandle: 'a2',
           type: 'coloredWire',
-          data: { label: 'A2', color: colorMap[outputColors[1]] },
+          data: { label: outputLabels[1], color: colorMap[outputColors[1]] },
           markerEnd: { type: MarkerType.ArrowClosed, color: colorMap[outputColors[1]] },
         });
       } else {
