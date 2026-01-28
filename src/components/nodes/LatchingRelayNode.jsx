@@ -1,24 +1,27 @@
 import { Handle, Position } from 'reactflow';
 
-export const RelayNode = ({ data }) => {
+export const LatchingRelayNode = ({ data }) => {
   const { outputNumber, terminals } = data;
 
   return (
     <div className="relay-node">
       <div className="node-header">
-        <h4>Relay</h4>
+        <h4>Latching</h4>
       </div>
       <svg width="200" height="180" viewBox="0 0 200 180">
         {/* Relay body - Clean dark background */}
         <rect x="20" y="20" width="160" height="140" rx="4" fill="#1a1a2e" stroke="#00a896" strokeWidth="2" />
 
-        {/* Coil symbol */}
-        <rect x="80" y="60" width="40" height="40" rx="2" fill="none" stroke="#00a896" strokeWidth="1" strokeDasharray="4 2" />
-        <line x1="80" y1="80" x2="120" y2="80" stroke="#00a896" strokeWidth="1" />
+        {/* Latching relay symbol - two coils */}
+        <rect x="70" y="50" width="60" height="30" rx="2" fill="none" stroke="#00a896" strokeWidth="1.5" />
+        <text x="100" y="70" fill="#00a896" fontSize="10" fontWeight="500" textAnchor="middle">SET</text>
+        
+        <rect x="70" y="90" width="60" height="30" rx="2" fill="none" stroke="#00a896" strokeWidth="1.5" />
+        <text x="100" y="110" fill="#00a896" fontSize="10" fontWeight="500" textAnchor="middle">RESET</text>
 
-        {/* Relay type indicator - centered at bottom */}
-        <text x="100" y="140" fill="#00a896" fontSize="11" fontWeight="400" textAnchor="middle" opacity="0.8">
-          Standard Type
+        {/* Latching indicator */}
+        <text x="100" y="145" fill="#00a896" fontSize="10" fontWeight="400" textAnchor="middle" opacity="0.8">
+          Latching Type
         </text>
       </svg>
 

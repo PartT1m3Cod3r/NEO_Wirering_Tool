@@ -13,6 +13,7 @@ import html2canvas from 'html2canvas';
 import { NeoDeviceNode } from '../components/nodes/NeoDeviceNode';
 import { SensorNode } from '../components/nodes/SensorNode';
 import { RelayNode } from '../components/nodes/RelayNode';
+import { LatchingRelayNode } from '../components/nodes/LatchingRelayNode';
 import { BatteryNode } from '../components/nodes/BatteryNode';
 import { ColoredWireEdge } from '../components/edges/ColoredWireEdge';
 import { DevicePalette } from '../components/system/DevicePalette';
@@ -25,6 +26,7 @@ const nodeTypes = {
   neoDevice: NeoDeviceNode,
   sensor: SensorNode,
   relay: RelayNode,
+  latchingRelay: LatchingRelayNode,
   battery: BatteryNode,
 };
 
@@ -366,9 +368,10 @@ export const SystemWiring = () => {
     const yOffset = deviceTemplate.plugType === 'inputs' ? 50 :
       deviceTemplate.plugType === 'communications' ? 350 : 650;
 
-    // Determine node type: battery for power-input, relay for outputs, sensor for others
+    // Determine node type: battery for power-input, latchingRelay for latching, relay for other outputs, sensor for others
     const getNodeType = () => {
       if (deviceTemplate.type === 'power-input') return 'battery';
+      if (deviceTemplate.type === 'latching') return 'latchingRelay';
       if (deviceTemplate.plugType === 'outputs') return 'relay';
       return 'sensor';
     };
@@ -559,7 +562,7 @@ export const SystemWiring = () => {
       } else if (device.type === 'latching') {
         const outputColors = device.output === 1 ? ['grey', 'pink'] : ['blue', 'red'];
         const pinMap = device.output === 1 ? ['pin-5', 'pin-6'] : ['pin-7', 'pin-8'];
-        const outputLabels = device.output === 1 ? ['Output 1', 'Output 2'] : ['Output 3', 'Output 4'];
+        const outputLabels = device.output === 1 ? ['Out 1', 'Out 2'] : ['Out 3', 'Out 4'];
 
         edges.push({
           id: `${edgeId}-a1`,
@@ -845,6 +848,7 @@ export const SystemWiring = () => {
               // Determine node type
               const getNodeType = () => {
                 if (device.type === 'power-input') return 'battery';
+                if (device.type === 'latching') return 'latchingRelay';
                 if (device.plugType === 'outputs') return 'relay';
                 return 'sensor';
               };
