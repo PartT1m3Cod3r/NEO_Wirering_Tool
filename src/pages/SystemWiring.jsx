@@ -1035,16 +1035,43 @@ export const SystemWiring = () => {
       // Edge labels need extra time to position correctly
       await new Promise(resolve => setTimeout(resolve, 500));
 
+      // Force ReactFlow to render all edges properly before capture
+      // by triggering a small viewport change
+      const reactFlowEl = container.querySelector('.react-flow');
+      if (reactFlowEl) {
+        reactFlowEl.style.transform = 'translateZ(0)';
+      }
+
+      // Wait a bit more for any lazy-rendered elements
+      await new Promise(resolve => setTimeout(resolve, 200));
+
       // Capture the diagram
       const canvas = await html2canvas(container, {
         backgroundColor: bgColor,
         scale: 2,
-        logging: false,
+        logging: true,
         useCORS: true,
         allowTaint: true,
-        foreignObjectRendering: true,
+        foreignObjectRendering: false,
         imageTimeout: 0,
+        onclone: (clonedDoc) => {
+          // Ensure all SVG elements are visible in the clone
+          const svgs = clonedDoc.querySelectorAll('svg');
+          svgs.forEach(svg => {
+            svg.style.overflow = 'visible';
+          });
+          // Ensure all edge paths are visible
+          const paths = clonedDoc.querySelectorAll('.react-flow__edge-path');
+          paths.forEach(path => {
+            path.style.strokeDasharray = 'none';
+          });
+        }
       });
+
+      // Restore transform
+      if (reactFlowEl) {
+        reactFlowEl.style.transform = '';
+      }
 
       // Restore filters
       edgePaths.forEach((path, idx) => {
