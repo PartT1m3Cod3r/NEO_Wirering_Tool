@@ -417,15 +417,17 @@ export const SystemWiring = () => {
         );
       } else if (device.type === 'latching') {
         const outputColors = device.output === 1 ? ['grey', 'pink'] : ['blue', 'red'];
+        // A2 on top, A1 on bottom (or A4 on top, A3 on bottom for output 3)
         terminals.push(
-          { id: 'a1', name: 'A1', color: colorMap[outputColors[0]] },
-          { id: 'a2', name: 'A2', color: colorMap[outputColors[1]] }
+          { id: 'a2', name: 'A2', color: colorMap[outputColors[1]] },
+          { id: 'a1', name: 'A1', color: colorMap[outputColors[0]] }
         );
       } else {
         const outputColors = { 1: 'grey', 2: 'pink', 3: 'blue', 4: 'red' };
+        // A2 (GND) on top, A1 (output) on bottom
         terminals.push(
-          { id: 'a1', name: 'A1', color: colorMap[outputColors[device.output]] },
-          { id: 'a2', name: 'A2', color: colorMap.yellow }
+          { id: 'a2', name: 'A2', color: colorMap.yellow },
+          { id: 'a1', name: 'A1', color: colorMap[outputColors[device.output]] }
         );
       }
     } else if (device.plugType === 'communications') {
