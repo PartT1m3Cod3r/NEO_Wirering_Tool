@@ -185,6 +185,356 @@ const getUsedPins = (device) => {
   return pins;
 };
 
+// Get device terminals for node display (pure function - moved outside component)
+const getDeviceTerminals = (device) => {
+  const terminals = [];
+
+  if (device.plugType === 'inputs') {
+    if (device.type === 'power-input') {
+      terminals.push(
+        { id: 'vcc+', name: 'VCC+', color: colorMap.white },
+        { id: 'gnd', name: 'GND', color: colorMap.brown }
+      );
+    } else {
+      const channelColors = { 1: 'red', 2: 'blue', 3: 'pink', 4: 'grey' };
+      terminals.push(
+        { id: 'signal', name: 'Signal', color: colorMap[channelColors[device.channel]] },
+        { id: 'power+', name: 'Power+', color: colorMap.green },
+        { id: 'gnd', name: 'GND', color: colorMap.yellow }
+      );
+    }
+  } else if (device.plugType === 'outputs') {
+    if (device.type === 'power-input') {
+      terminals.push(
+        { id: 'vcc+', name: 'VCC+', color: colorMap.white },
+        { id: 'gnd', name: 'GND', color: colorMap.brown }
+      );
+    } else if (device.type === 'latching') {
+      const outputColors = device.output === 1 ? ['grey', 'pink'] : ['blue', 'red'];
+      // A2 on top, A1 on bottom (or A4 on top, A3 on bottom for output 3)
+      terminals.push(
+        { id: 'a2', name: 'A2', color: colorMap[outputColors[1]] },
+        { id: 'a1', name: 'A1', color: colorMap[outputColors[0]] }
+      );
+    } else {
+      const outputColors = { 1: 'grey', 2: 'pink', 3: 'blue', 4: 'red' };
+      // A2 (GND) on top, A1 (output) on bottom
+      terminals.push(
+        { id: 'a2', name: 'A2', color: colorMap.yellow },
+        { id: 'a1', name: 'A1', color: colorMap[outputColors[device.output]] }
+      );
+    }
+  } else if (device.plugType === 'communications') {
+    if (device.type === 'power-input') {
+      terminals.push(
+        { id: 'vcc+', name: 'VCC+', color: colorMap.white },
+        { id: 'gnd', name: 'GND', color: colorMap.brown }
+      );
+    } else if (device.type === 'rs485') {
+      terminals.push(
+        { id: 'b', name: 'B', color: colorMap.green },
+        { id: 'a', name: 'A', color: colorMap.yellow }
+      );
+    } else if (device.type === 'wiegand') {
+      terminals.push(
+        { id: 'd0', name: 'D0', color: colorMap.pink },
+        { id: 'd1', name: 'D1', color: colorMap.grey }
+      );
+    } else if (device.type === 'sdi12') {
+      terminals.push(
+        { id: 'data', name: 'Data', color: colorMap.blue },
+        { id: 'gnd', name: 'GND', color: colorMap.red }
+      );
+    } else if (device.type === 'pulse') {
+      terminals.push(
+        { id: 'signal', name: 'Signal', color: colorMap.pink },
+        { id: 'power', name: 'Power+', color: colorMap.green },
+        { id: 'gnd', name: 'GND', color: colorMap.yellow }
+      );
+    }
+  }
+
+  return terminals;
+};
+
+// Create edges for a device (pure function - moved outside component)
+const createEdgesForDevice = (device) => {
+  const edges = [];
+  const edgeId = `e-${device.id}`; // Use stable ID prefix based on device ID
+
+  if (device.plugType === 'inputs') {
+    if (device.type === 'power-input') {
+      // Power input - arrows point INTO neo (battery is source, neo is target)
+      edges.push({
+        id: `${edgeId}-vcc`,
+        source: device.id,
+        target: 'neo-inputs',
+        sourceHandle: 'vcc+',
+        targetHandle: 'vcc',
+        type: 'coloredWire',
+        data: { label: 'VCC+ (Pin 1)', color: colorMap.white },
+        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.white },
+      });
+      edges.push({
+        id: `${edgeId}-gnd`,
+        source: device.id,
+        target: 'neo-inputs',
+        sourceHandle: 'gnd',
+        targetHandle: 'gnd',
+        type: 'coloredWire',
+        data: { label: 'GND (Pin 2)', color: colorMap.brown },
+        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.brown },
+      });
+    } else {
+      const channelColors = { 1: 'red', 2: 'blue', 3: 'pink', 4: 'grey' };
+      const pinMap = { 1: 'pin-8', 2: 'pin-7', 3: 'pin-6', 4: 'pin-5' };
+
+      const channel = device.channel;
+      const color = channelColors[channel] ? colorMap[channelColors[channel]] : '#999';
+      const sourceHandle = pinMap[channel];
+
+      if (sourceHandle) {
+        edges.push({
+          id: `${edgeId}-signal`,
+          source: 'neo-inputs',
+          target: device.id,
+          sourceHandle: sourceHandle,
+          targetHandle: 'signal',
+          type: 'coloredWire',
+          data: { label: 'Signal', color: color },
+          markerEnd: { type: MarkerType.ArrowClosed, color: color },
+        });
+      }
+
+      edges.push({
+        id: `${edgeId}-power`,
+        source: 'neo-inputs',
+        target: device.id,
+        sourceHandle: 'power',
+        targetHandle: 'power+',
+        type: 'coloredWire',
+        data: { label: 'Power', color: colorMap.green },
+        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.green },
+      });
+      edges.push({
+        id: `${edgeId}-gnd`,
+        source: 'neo-inputs',
+        target: device.id,
+        sourceHandle: 'gnd',
+        targetHandle: 'gnd',
+        type: 'coloredWire',
+        data: { label: 'GND', color: colorMap.yellow },
+        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.yellow },
+      });
+    }
+  } else if (device.plugType === 'outputs') {
+    if (device.type === 'power-input') {
+      // Power input - arrows point INTO neo (battery is source, neo is target)
+      edges.push({
+        id: `${edgeId}-vcc`,
+        source: device.id,
+        target: 'neo-outputs',
+        sourceHandle: 'vcc+',
+        targetHandle: 'vcc',
+        type: 'coloredWire',
+        data: { label: 'VCC+ (Pin 1)', color: colorMap.white },
+        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.white },
+      });
+      edges.push({
+        id: `${edgeId}-gnd`,
+        source: device.id,
+        target: 'neo-outputs',
+        sourceHandle: 'gnd',
+        targetHandle: 'gnd',
+        type: 'coloredWire',
+        data: { label: 'GND (Pin 2)', color: colorMap.brown },
+        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.brown },
+      });
+    } else if (device.type === 'latching') {
+      const outputColors = device.output === 1 ? ['grey', 'pink'] : ['blue', 'red'];
+      const pinMap = device.output === 1 ? ['pin-5', 'pin-6'] : ['pin-7', 'pin-8'];
+      const outputLabels = device.output === 1 ? ['Out 1', 'Out 2'] : ['Out 3', 'Out 4'];
+
+      edges.push({
+        id: `${edgeId}-a1`,
+        source: 'neo-outputs',
+        target: device.id,
+        sourceHandle: pinMap[0],
+        targetHandle: 'a1',
+        type: 'coloredWire',
+        data: { label: outputLabels[0], color: colorMap[outputColors[0]] },
+        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap[outputColors[0]] },
+      });
+      edges.push({
+        id: `${edgeId}-a2`,
+        source: 'neo-outputs',
+        target: device.id,
+        sourceHandle: pinMap[1],
+        targetHandle: 'a2',
+        type: 'coloredWire',
+        data: { label: outputLabels[1], color: colorMap[outputColors[1]] },
+        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap[outputColors[1]] },
+      });
+    } else {
+      const outputColors = { 1: 'grey', 2: 'pink', 3: 'blue', 4: 'red' };
+      const pinMap = { 1: 'pin-5', 2: 'pin-6', 3: 'pin-7', 4: 'pin-8' };
+      const output = device.output;
+
+      const sourceHandle = pinMap[output];
+      const color = outputColors[output] ? colorMap[outputColors[output]] : '#999';
+
+      if (sourceHandle) {
+        edges.push({
+          id: `${edgeId}-a1`,
+          source: 'neo-outputs',
+          target: device.id,
+          sourceHandle: sourceHandle,
+          targetHandle: 'a1',
+          type: 'coloredWire',
+          data: { label: `Out ${output}`, color: color },
+          markerEnd: { type: MarkerType.ArrowClosed, color: color },
+        });
+      }
+
+      edges.push({
+        id: `${edgeId}-a2`,
+        source: 'neo-outputs',
+        target: device.id,
+        sourceHandle: 'gnd',
+        targetHandle: 'a2',
+        type: 'coloredWire',
+        data: { label: 'GND', color: colorMap.yellow },
+        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.yellow },
+      });
+    }
+  } else if (device.plugType === 'communications') {
+    if (device.type === 'power-input') {
+      // Power input - arrows point INTO neo (battery is source, neo is target)
+      edges.push({
+        id: `${edgeId}-vcc`,
+        source: device.id,
+        target: 'neo-comms',
+        sourceHandle: 'vcc+',
+        targetHandle: 'vcc',
+        type: 'coloredWire',
+        data: { label: 'VCC+ (Pin 1)', color: colorMap.white },
+        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.white },
+      });
+      edges.push({
+        id: `${edgeId}-gnd`,
+        source: device.id,
+        target: 'neo-comms',
+        sourceHandle: 'gnd',
+        targetHandle: 'gnd',
+        type: 'coloredWire',
+        data: { label: 'GND (Pin 2)', color: colorMap.brown },
+        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.brown },
+      });
+    } else if (device.type === 'rs485') {
+      edges.push({
+        id: `${edgeId}-b`,
+        source: 'neo-comms',
+        target: device.id,
+        sourceHandle: 'b',
+        targetHandle: 'b',
+        type: 'coloredWire',
+        data: { label: 'B', color: colorMap.green },
+        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.green },
+      });
+      edges.push({
+        id: `${edgeId}-a`,
+        source: 'neo-comms',
+        target: device.id,
+        sourceHandle: 'a',
+        targetHandle: 'a',
+        type: 'coloredWire',
+        data: { label: 'A', color: colorMap.yellow },
+        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.yellow },
+      });
+    } else if (device.type === 'wiegand') {
+      edges.push({
+        id: `${edgeId}-d0`,
+        source: 'neo-comms',
+        target: device.id,
+        sourceHandle: 'd0',
+        targetHandle: 'd0',
+        type: 'coloredWire',
+        data: { label: 'D0', color: colorMap.pink },
+        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.pink },
+      });
+      edges.push({
+        id: `${edgeId}-d1`,
+        source: 'neo-comms',
+        target: device.id,
+        sourceHandle: 'd1',
+        targetHandle: 'd1',
+        type: 'coloredWire',
+        data: { label: 'D1', color: colorMap.grey },
+        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.grey },
+      });
+    } else if (device.type === 'sdi12') {
+      edges.push({
+        id: `${edgeId}-data`,
+        source: 'neo-comms',
+        target: device.id,
+        sourceHandle: 'data',
+        targetHandle: 'data',
+        type: 'coloredWire',
+        data: { label: 'Data', color: colorMap.blue },
+        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.blue },
+      });
+      edges.push({
+        id: `${edgeId}-gnd`,
+        source: 'neo-comms',
+        target: device.id,
+        sourceHandle: 'gnd',
+        targetHandle: 'gnd',
+        type: 'coloredWire',
+        data: { label: 'GND', color: colorMap.red },
+        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.red },
+      });
+    } else if (device.type === 'pulse') {
+      // Pulse gets Power/GND from Inputs (cross-wiring) or locally if configured. 
+      // Standard spec says Pulse Adapter uses inputs.
+      // Signal comes from Comms.
+
+      edges.push({
+        id: `${edgeId}-signal`,
+        source: 'neo-comms',
+        target: device.id,
+        sourceHandle: device.input === 2 ? 'pin-5' : 'pin-6',
+        targetHandle: 'signal',
+        type: 'coloredWire',
+        data: { label: 'Signal', color: device.input === 2 ? colorMap.grey : colorMap.pink },
+        markerEnd: { type: MarkerType.ArrowClosed, color: device.input === 2 ? colorMap.grey : colorMap.pink },
+      });
+      // Power from Inputs plug (Neo Inputs node)
+      edges.push({
+        id: `${edgeId}-power`,
+        source: 'neo-inputs',
+        target: device.id,
+        sourceHandle: 'power',
+        targetHandle: 'power',
+        type: 'coloredWire',
+        data: { label: 'Power', color: colorMap.green },
+        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.green },
+      });
+      edges.push({
+        id: `${edgeId}-gnd`,
+        source: 'neo-inputs',
+        target: device.id,
+        sourceHandle: 'gnd',
+        targetHandle: 'gnd',
+        type: 'coloredWire',
+        data: { label: 'GND', color: colorMap.yellow },
+        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.yellow },
+      });
+    }
+  }
+
+  return edges;
+};
+
 export const SystemWiring = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -429,356 +779,6 @@ export const SystemWiring = () => {
     const newEdges = createEdgesForDevice(newDevice);
     setEdges((prev) => [...prev, ...newEdges]);
   }, [connectedDevices, checkConflicts, setNodes, setEdges]);
-
-  // Get device terminals for node display
-  const getDeviceTerminals = (device) => {
-    const terminals = [];
-
-    if (device.plugType === 'inputs') {
-      if (device.type === 'power-input') {
-        terminals.push(
-          { id: 'vcc+', name: 'VCC+', color: colorMap.white },
-          { id: 'gnd', name: 'GND', color: colorMap.brown }
-        );
-      } else {
-        const channelColors = { 1: 'red', 2: 'blue', 3: 'pink', 4: 'grey' };
-        terminals.push(
-          { id: 'signal', name: 'Signal', color: colorMap[channelColors[device.channel]] },
-          { id: 'power+', name: 'Power+', color: colorMap.green },
-          { id: 'gnd', name: 'GND', color: colorMap.yellow }
-        );
-      }
-    } else if (device.plugType === 'outputs') {
-      if (device.type === 'power-input') {
-        terminals.push(
-          { id: 'vcc+', name: 'VCC+', color: colorMap.white },
-          { id: 'gnd', name: 'GND', color: colorMap.brown }
-        );
-      } else if (device.type === 'latching') {
-        const outputColors = device.output === 1 ? ['grey', 'pink'] : ['blue', 'red'];
-        // A2 on top, A1 on bottom (or A4 on top, A3 on bottom for output 3)
-        terminals.push(
-          { id: 'a2', name: 'A2', color: colorMap[outputColors[1]] },
-          { id: 'a1', name: 'A1', color: colorMap[outputColors[0]] }
-        );
-      } else {
-        const outputColors = { 1: 'grey', 2: 'pink', 3: 'blue', 4: 'red' };
-        // A2 (GND) on top, A1 (output) on bottom
-        terminals.push(
-          { id: 'a2', name: 'A2', color: colorMap.yellow },
-          { id: 'a1', name: 'A1', color: colorMap[outputColors[device.output]] }
-        );
-      }
-    } else if (device.plugType === 'communications') {
-      if (device.type === 'power-input') {
-        terminals.push(
-          { id: 'vcc+', name: 'VCC+', color: colorMap.white },
-          { id: 'gnd', name: 'GND', color: colorMap.brown }
-        );
-      } else if (device.type === 'rs485') {
-        terminals.push(
-          { id: 'b', name: 'B', color: colorMap.green },
-          { id: 'a', name: 'A', color: colorMap.yellow }
-        );
-      } else if (device.type === 'wiegand') {
-        terminals.push(
-          { id: 'd0', name: 'D0', color: colorMap.pink },
-          { id: 'd1', name: 'D1', color: colorMap.grey }
-        );
-      } else if (device.type === 'sdi12') {
-        terminals.push(
-          { id: 'data', name: 'Data', color: colorMap.blue },
-          { id: 'gnd', name: 'GND', color: colorMap.red }
-        );
-      } else if (device.type === 'pulse') {
-        terminals.push(
-          { id: 'signal', name: 'Signal', color: colorMap.pink },
-          { id: 'power', name: 'Power+', color: colorMap.green },
-          { id: 'gnd', name: 'GND', color: colorMap.yellow }
-        );
-      }
-    }
-
-    return terminals;
-  };
-
-  // Create edges for a device
-  const createEdgesForDevice = (device) => {
-    const edges = [];
-    const edgeId = `e-${device.id}`; // Use stable ID prefix based on device ID
-
-    if (device.plugType === 'inputs') {
-      if (device.type === 'power-input') {
-        // Power input - arrows point INTO neo (battery is source, neo is target)
-        edges.push({
-          id: `${edgeId}-vcc`,
-          source: device.id,
-          target: 'neo-inputs',
-          sourceHandle: 'vcc+',
-          targetHandle: 'vcc',
-          type: 'coloredWire',
-          data: { label: 'VCC+ (Pin 1)', color: colorMap.white },
-          markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.white },
-        });
-        edges.push({
-          id: `${edgeId}-gnd`,
-          source: device.id,
-          target: 'neo-inputs',
-          sourceHandle: 'gnd',
-          targetHandle: 'gnd',
-          type: 'coloredWire',
-          data: { label: 'GND (Pin 2)', color: colorMap.brown },
-          markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.brown },
-        });
-      } else {
-        const channelColors = { 1: 'red', 2: 'blue', 3: 'pink', 4: 'grey' };
-        const pinMap = { 1: 'pin-8', 2: 'pin-7', 3: 'pin-6', 4: 'pin-5' };
-
-        const channel = device.channel;
-        const color = channelColors[channel] ? colorMap[channelColors[channel]] : '#999';
-        const sourceHandle = pinMap[channel];
-
-        if (sourceHandle) {
-          edges.push({
-            id: `${edgeId}-signal`,
-            source: 'neo-inputs',
-            target: device.id,
-            sourceHandle: sourceHandle,
-            targetHandle: 'signal',
-            type: 'coloredWire',
-            data: { label: 'Signal', color: color },
-            markerEnd: { type: MarkerType.ArrowClosed, color: color },
-          });
-        }
-
-        edges.push({
-          id: `${edgeId}-power`,
-          source: 'neo-inputs',
-          target: device.id,
-          sourceHandle: 'power',
-          targetHandle: 'power+',
-          type: 'coloredWire',
-          data: { label: 'Power', color: colorMap.green },
-          markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.green },
-        });
-        edges.push({
-          id: `${edgeId}-gnd`,
-          source: 'neo-inputs',
-          target: device.id,
-          sourceHandle: 'gnd',
-          targetHandle: 'gnd',
-          type: 'coloredWire',
-          data: { label: 'GND', color: colorMap.yellow },
-          markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.yellow },
-        });
-      }
-    } else if (device.plugType === 'outputs') {
-      if (device.type === 'power-input') {
-        // Power input - arrows point INTO neo (battery is source, neo is target)
-        edges.push({
-          id: `${edgeId}-vcc`,
-          source: device.id,
-          target: 'neo-outputs',
-          sourceHandle: 'vcc+',
-          targetHandle: 'vcc',
-          type: 'coloredWire',
-          data: { label: 'VCC+ (Pin 1)', color: colorMap.white },
-          markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.white },
-        });
-        edges.push({
-          id: `${edgeId}-gnd`,
-          source: device.id,
-          target: 'neo-outputs',
-          sourceHandle: 'gnd',
-          targetHandle: 'gnd',
-          type: 'coloredWire',
-          data: { label: 'GND (Pin 2)', color: colorMap.brown },
-          markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.brown },
-        });
-      } else if (device.type === 'latching') {
-        const outputColors = device.output === 1 ? ['grey', 'pink'] : ['blue', 'red'];
-        const pinMap = device.output === 1 ? ['pin-5', 'pin-6'] : ['pin-7', 'pin-8'];
-        const outputLabels = device.output === 1 ? ['Out 1', 'Out 2'] : ['Out 3', 'Out 4'];
-
-        edges.push({
-          id: `${edgeId}-a1`,
-          source: 'neo-outputs',
-          target: device.id,
-          sourceHandle: pinMap[0],
-          targetHandle: 'a1',
-          type: 'coloredWire',
-          data: { label: outputLabels[0], color: colorMap[outputColors[0]] },
-          markerEnd: { type: MarkerType.ArrowClosed, color: colorMap[outputColors[0]] },
-        });
-        edges.push({
-          id: `${edgeId}-a2`,
-          source: 'neo-outputs',
-          target: device.id,
-          sourceHandle: pinMap[1],
-          targetHandle: 'a2',
-          type: 'coloredWire',
-          data: { label: outputLabels[1], color: colorMap[outputColors[1]] },
-          markerEnd: { type: MarkerType.ArrowClosed, color: colorMap[outputColors[1]] },
-        });
-      } else {
-        const outputColors = { 1: 'grey', 2: 'pink', 3: 'blue', 4: 'red' };
-        const pinMap = { 1: 'pin-5', 2: 'pin-6', 3: 'pin-7', 4: 'pin-8' };
-        const output = device.output;
-
-        const sourceHandle = pinMap[output];
-        const color = outputColors[output] ? colorMap[outputColors[output]] : '#999';
-
-        if (sourceHandle) {
-          edges.push({
-            id: `${edgeId}-a1`,
-            source: 'neo-outputs',
-            target: device.id,
-            sourceHandle: sourceHandle,
-            targetHandle: 'a1',
-            type: 'coloredWire',
-            data: { label: `Out ${output}`, color: color },
-            markerEnd: { type: MarkerType.ArrowClosed, color: color },
-          });
-        }
-
-        edges.push({
-          id: `${edgeId}-a2`,
-          source: 'neo-outputs',
-          target: device.id,
-          sourceHandle: 'gnd',
-          targetHandle: 'a2',
-          type: 'coloredWire',
-          data: { label: 'GND', color: colorMap.yellow },
-          markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.yellow },
-        });
-      }
-    } else if (device.plugType === 'communications') {
-      if (device.type === 'power-input') {
-        // Power input - arrows point INTO neo (battery is source, neo is target)
-        edges.push({
-          id: `${edgeId}-vcc`,
-          source: device.id,
-          target: 'neo-comms',
-          sourceHandle: 'vcc+',
-          targetHandle: 'vcc',
-          type: 'coloredWire',
-          data: { label: 'VCC+ (Pin 1)', color: colorMap.white },
-          markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.white },
-        });
-        edges.push({
-          id: `${edgeId}-gnd`,
-          source: device.id,
-          target: 'neo-comms',
-          sourceHandle: 'gnd',
-          targetHandle: 'gnd',
-          type: 'coloredWire',
-          data: { label: 'GND (Pin 2)', color: colorMap.brown },
-          markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.brown },
-        });
-      } else if (device.type === 'rs485') {
-        edges.push({
-          id: `${edgeId}-b`,
-          source: 'neo-comms',
-          target: device.id,
-          sourceHandle: 'b',
-          targetHandle: 'b',
-          type: 'coloredWire',
-          data: { label: 'B', color: colorMap.green },
-          markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.green },
-        });
-        edges.push({
-          id: `${edgeId}-a`,
-          source: 'neo-comms',
-          target: device.id,
-          sourceHandle: 'a',
-          targetHandle: 'a',
-          type: 'coloredWire',
-          data: { label: 'A', color: colorMap.yellow },
-          markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.yellow },
-        });
-      } else if (device.type === 'wiegand') {
-        edges.push({
-          id: `${edgeId}-d0`,
-          source: 'neo-comms',
-          target: device.id,
-          sourceHandle: 'd0',
-          targetHandle: 'd0',
-          type: 'coloredWire',
-          data: { label: 'D0', color: colorMap.pink },
-          markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.pink },
-        });
-        edges.push({
-          id: `${edgeId}-d1`,
-          source: 'neo-comms',
-          target: device.id,
-          sourceHandle: 'd1',
-          targetHandle: 'd1',
-          type: 'coloredWire',
-          data: { label: 'D1', color: colorMap.grey },
-          markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.grey },
-        });
-      } else if (device.type === 'sdi12') {
-        edges.push({
-          id: `${edgeId}-data`,
-          source: 'neo-comms',
-          target: device.id,
-          sourceHandle: 'data',
-          targetHandle: 'data',
-          type: 'coloredWire',
-          data: { label: 'Data', color: colorMap.blue },
-          markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.blue },
-        });
-        edges.push({
-          id: `${edgeId}-gnd`,
-          source: 'neo-comms',
-          target: device.id,
-          sourceHandle: 'gnd',
-          targetHandle: 'gnd',
-          type: 'coloredWire',
-          data: { label: 'GND', color: colorMap.red },
-          markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.red },
-        });
-      } else if (device.type === 'pulse') {
-        // Pulse gets Power/GND from Inputs (cross-wiring) or locally if configured. 
-        // Standard spec says Pulse Adapter uses inputs.
-        // Signal comes from Comms.
-
-        edges.push({
-          id: `${edgeId}-signal`,
-          source: 'neo-comms',
-          target: device.id,
-          sourceHandle: device.input === 2 ? 'pin-5' : 'pin-6',
-          targetHandle: 'signal',
-          type: 'coloredWire',
-          data: { label: 'Signal', color: device.input === 2 ? colorMap.grey : colorMap.pink },
-          markerEnd: { type: MarkerType.ArrowClosed, color: device.input === 2 ? colorMap.grey : colorMap.pink },
-        });
-        // Power from Inputs plug (Neo Inputs node)
-        edges.push({
-          id: `${edgeId}-power`,
-          source: 'neo-inputs',
-          target: device.id,
-          sourceHandle: 'power',
-          targetHandle: 'power',
-          type: 'coloredWire',
-          data: { label: 'Power', color: colorMap.green },
-          markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.green },
-        });
-        edges.push({
-          id: `${edgeId}-gnd`,
-          source: 'neo-inputs',
-          target: device.id,
-          sourceHandle: 'gnd',
-          targetHandle: 'gnd',
-          type: 'coloredWire',
-          data: { label: 'GND', color: colorMap.yellow },
-          markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.yellow },
-        });
-      }
-    }
-
-    return edges;
-  };
 
   // Remove a device
   const removeDevice = useCallback((deviceId) => {
