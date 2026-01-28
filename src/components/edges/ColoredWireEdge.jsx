@@ -77,16 +77,19 @@ export const ColoredWireEdge = ({
               justifyContent: 'center',
               alignItems: 'center',
             }}>
-              <span style={{
-                backgroundColor: 'var(--bg-secondary)',
-                color: 'var(--text-primary)',
-                padding: '2px 6px',
+              <span className="edge-label-text" style={{
+                backgroundColor: '#1a1a2e',
+                color: '#e0e0e0',
+                padding: '3px 8px',
                 borderRadius: '4px',
-                fontSize: '10px',
-                fontWeight: '600',
+                fontSize: '11px',
+                fontWeight: '700',
                 border: `2px solid ${color}`,
                 whiteSpace: 'nowrap',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                boxShadow: '0 2px 6px rgba(0,0,0,0.5)',
+                textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+                display: 'inline-block',
+                lineHeight: '1.2'
               }}>
                 {label}
               </span>

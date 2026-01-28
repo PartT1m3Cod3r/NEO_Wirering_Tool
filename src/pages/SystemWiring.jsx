@@ -1014,12 +1014,26 @@ export const SystemWiring = () => {
         path.style.filter = 'none';
       });
 
+      // Temporarily fix edge label styles for better capture
+      const edgeLabels = container.querySelectorAll('.edge-label-text');
+      const originalLabelStyles = [];
+      edgeLabels.forEach((label, idx) => {
+        originalLabelStyles[idx] = {
+          backgroundColor: label.style.backgroundColor,
+          color: label.style.color,
+        };
+        // Force solid colors for capture
+        label.style.backgroundColor = '#1a1a2e';
+        label.style.color = '#e0e0e0';
+      });
+
       // Get current theme background color
       const isDarkTheme = document.documentElement.getAttribute('data-theme') !== 'light';
       const bgColor = isDarkTheme ? '#0a0a0f' : '#f5f5f7';
 
       // Wait for the UI to update and ReactFlow to fully render
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Edge labels need extra time to position correctly
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Capture the diagram
       const canvas = await html2canvas(container, {
@@ -1028,12 +1042,21 @@ export const SystemWiring = () => {
         logging: false,
         useCORS: true,
         allowTaint: true,
-        foreignObjectRendering: false,
+        foreignObjectRendering: true,
+        imageTimeout: 0,
       });
 
       // Restore filters
       edgePaths.forEach((path, idx) => {
         path.style.filter = originalFilters[idx] || '';
+      });
+
+      // Restore label styles
+      edgeLabels.forEach((label, idx) => {
+        if (originalLabelStyles[idx]) {
+          label.style.backgroundColor = originalLabelStyles[idx].backgroundColor;
+          label.style.color = originalLabelStyles[idx].color;
+        }
       });
 
       // Restore overlays
