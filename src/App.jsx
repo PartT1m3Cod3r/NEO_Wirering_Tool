@@ -28,12 +28,10 @@ function App() {
 
     const pins = [];
 
-    // Always include pins 1 & 2 (Solar/Supply)
-    pins.push(1, 2);
-
     if (selectedPlug === 'inputs') {
       if (selectedTypeData.value === 'power-input') {
         // Power input only uses pins 1 & 2
+        pins.push(1, 2);
       } else if (selectedChannel) {
         // Map channel to signal pin
         const channelPins = { 1: 8, 2: 7, 3: 6, 4: 5 };
@@ -48,6 +46,7 @@ function App() {
     } else if (selectedPlug === 'outputs') {
       if (selectedTypeData.value === 'power-input') {
         // Power input only uses pins 1 & 2
+        pins.push(1, 2);
       } else if (selectedOutput) {
         // Map output to pins
         const outputPins = { 1: 5, 2: 6, 3: 7, 4: 8 };
@@ -67,6 +66,7 @@ function App() {
       // Communications devices
       if (selectedTypeData.value === 'power-input') {
         // Power input only uses pins 1 & 2
+        pins.push(1, 2);
       } else if (selectedTypeData.value === 'rs485') {
         pins.push(3, 4); // B and A
       } else if (selectedTypeData.value === 'wiegand') {
