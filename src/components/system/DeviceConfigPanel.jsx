@@ -215,21 +215,22 @@ const getWiringConnections = (device) => {
       addConn(1, 'VCC+');
       addConn(2, 'GND');
     } else {
-      // Solar power pins (always present)
-      addConn(1, 'Solar/Supply +');
-      addConn(2, 'GND');
-      // Signal and sensor power
+      // Check wire mode - 2-wire excludes GND pins
+      const is2Wire = device.wireMode === '2-wire';
+      
+      // Signal and sensor power (always shown)
       const channelPins = { 1: 8, 2: 7, 3: 6, 4: 5 };
       const pin = channelPins[device.channel];
       if (pin) addConn(pin, 'Signal');
       addConn(3, 'Sensor Vout+');
-      addConn(4, 'Sensor GND');
+      
+      // Only show GND connections for 3-wire mode
+      if (!is2Wire) {
+        addConn(4, 'Sensor GND');
+      }
     }
   }
   else if (device.plugType === 'outputs') {
-    // Solar power pins (always present)
-    addConn(1, 'Solar/Supply +');
-    addConn(2, 'GND');
     // Actuator connections
     if (device.type === 'latching') {
       if (device.output === 1) {
@@ -254,9 +255,6 @@ const getWiringConnections = (device) => {
     addConn(2, `${sourceLabel} -`);
   }
   else if (device.plugType === 'communications') {
-    // Solar power pins (always present for all comms devices)
-    addConn(1, 'Solar/Supply +');
-    addConn(2, 'GND');
     // Device-specific connections
     if (device.type === 'rs485') {
       addConn(3, 'B');
