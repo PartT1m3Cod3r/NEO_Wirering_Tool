@@ -9,6 +9,7 @@ function App() {
   const [selectedType, setSelectedType] = useState('')
   const [selectedOutput, setSelectedOutput] = useState('')
   const [selectedChannel, setSelectedChannel] = useState('')
+  const [wireMode, setWireMode] = useState('3-wire')
 
   const selectedPlugData = plugOptions.find(p => p.value === selectedPlug)
   const selectedTypeData = selectedPlugData?.types.find(t => t.value === selectedType)
@@ -18,7 +19,92 @@ function App() {
     setSelectedType('')
     setSelectedOutput('')
     setSelectedChannel('')
+    setWireMode('3-wire')
   }
+
+  // Determine which pins are used for the current configuration
+  const getUsedPins = () => {
+    if (!selectedPlug || !selectedTypeData) return [];
+
+    const pins = [];
+
+    // Always include pins 1 & 2 (Solar/Supply)
+    pins.push(1, 2);
+
+    if (selectedPlug === 'inputs') {
+      if (selectedTypeData.value === 'power-input') {
+        // Power input only uses pins 1 & 2
+      } else if (selectedChannel) {
+        // Map channel to signal pin
+        const channelPins = { 1: 8, 2: 7, 3: 6, 4: 5 };
+        pins.push(channelPins[selectedChannel]);
+        // Power (Pin 3) always used for sensors
+        pins.push(3);
+        // GND (Pin 4) only for 3-wire mode
+        if (wireMode === '3-wire') {
+          pins.push(4);
+        }
+      }
+    } else if (selectedPlug === 'outputs') {
+      if (selectedTypeData.value === 'power-input') {
+        // Power input only uses pins 1 & 2
+      } else if (selectedOutput) {
+        // Map output to pins
+        const outputPins = { 1: 5, 2: 6, 3: 7, 4: 8 };
+        pins.push(outputPins[selectedOutput]);
+        // GND (Pin 4) always used for outputs
+        pins.push(4);
+        // For latching with output 3, also add pin 8
+        if (selectedTypeData.value === 'latching') {
+          if (selectedOutput === '1') {
+            pins.push(6); // A2
+          } else if (selectedOutput === '3') {
+            pins.push(8); // A4
+          }
+        }
+      }
+    } else if (selectedPlug === 'communications') {
+      // Communications devices
+      if (selectedTypeData.value === 'power-input') {
+        // Power input only uses pins 1 & 2
+      } else if (selectedTypeData.value === 'rs485') {
+        pins.push(3, 4); // B and A
+      } else if (selectedTypeData.value === 'wiegand') {
+        pins.push(5, 6); // D1, D0
+      } else if (selectedTypeData.value === 'sdi12') {
+        pins.push(7, 8); // Data, GND
+      } else if (selectedTypeData.value === 'pulse') {
+        pins.push(3, 4, 6); // Power, GND, Signal
+      }
+    }
+
+    return [...new Set(pins)].sort((a, b) => a - b);
+  };
+
+  const usedPins = getUsedPins();
+
+  // Filter pins for display
+  const getFilteredPins = () => {
+    if (!selectedTypeData?.pins) return [];
+    return selectedTypeData.pins.filter(pin => usedPins.includes(pin.pin));
+  };
+
+  // Filter legend items based on used pins
+  const getLegendItems = () => {
+    const allColors = [
+      { pin: 1, color: '#FFFFFF', name: 'White', border: true },
+      { pin: 2, color: '#8B4513', name: 'Brown' },
+      { pin: 3, color: '#00FF00', name: 'Green' },
+      { pin: 4, color: '#FFFF00', name: 'Yellow' },
+      { pin: 5, color: '#808080', name: 'Grey' },
+      { pin: 6, color: '#FFC0CB', name: 'Pink' },
+      { pin: 7, color: '#0000FF', name: 'Blue' },
+      { pin: 8, color: '#FF0000', name: 'Red' },
+    ];
+    
+    if (usedPins.length === 0) return allColors;
+    return allColors.filter(item => usedPins.includes(item.pin));
+  };
 
   return (
     <div className="app">
@@ -58,20 +144,33 @@ function App() {
         )}
 
         {selectedPlug === 'inputs' && selectedTypeData && selectedTypeData.value !== 'power-input' && (
-          <div className="dropdown-group">
-            <label htmlFor="channel-select">Channel Number:</label>
-            <select
-              id="channel-select"
-              value={selectedChannel}
-              onChange={(e) => setSelectedChannel(e.target.value)}
-            >
-              <option value="">Select Channel</option>
-              <option value="1">Channel 1 - Red (Pin 8)</option>
-              <option value="2">Channel 2 - Blue (Pin 7)</option>
-              <option value="3">Channel 3 - Pink (Pin 6)</option>
-              <option value="4">Channel 4 - Grey (Pin 5)</option>
-            </select>
-          </div>
+          <>
+            <div className="dropdown-group">
+              <label htmlFor="channel-select">Channel Number:</label>
+              <select
+                id="channel-select"
+                value={selectedChannel}
+                onChange={(e) => setSelectedChannel(e.target.value)}
+              >
+                <option value="">Select Channel</option>
+                <option value="1">Channel 1 - Red (Pin 8)</option>
+                <option value="2">Channel 2 - Blue (Pin 7)</option>
+                <option value="3">Channel 3 - Pink (Pin 6)</option>
+                <option value="4">Channel 4 - Grey (Pin 5)</option>
+              </select>
+            </div>
+            <div className="dropdown-group">
+              <label htmlFor="wire-mode-select">Wiring Mode:</label>
+              <select
+                id="wire-mode-select"
+                value={wireMode}
+                onChange={(e) => setWireMode(e.target.value)}
+              >
+                <option value="2-wire">2-Wire (Signal + Power)</option>
+                <option value="3-wire">3-Wire (Signal + Power + GND)</option>
+              </select>
+            </div>
+          </>
         )}
 
         {selectedPlug === 'outputs' && selectedTypeData && selectedTypeData.value !== 'power-input' && (
@@ -103,11 +202,13 @@ function App() {
 
       <div className="plug-display-container">
         <PlugDisplay
-          pins={selectedTypeData?.pins}
+          pins={getFilteredPins()}
+          allPins={selectedTypeData?.pins}
           title={selectedTypeData ? `${selectedPlugData.label} - ${selectedTypeData.label}` : 'Select Configuration'}
           selectedChannel={selectedChannel}
           plugType={selectedPlug}
           typeData={selectedTypeData}
+          usedPins={usedPins}
         />
       </div>
 
@@ -121,40 +222,20 @@ function App() {
       </div>
 
       <div className="legend">
-        <h3>Color Legend</h3>
+        <h3>Color Legend {usedPins.length > 0 && <span style={{ fontSize: '0.8em', fontWeight: 'normal', color: '#888' }}>(Used Pins Only)</span>}</h3>
         <div className="legend-items">
-          <div className="legend-item">
-            <div className="legend-color" style={{ backgroundColor: '#FFFFFF', border: '1px solid #ccc' }}></div>
-            <span>White (Pin 1)</span>
-          </div>
-          <div className="legend-item">
-            <div className="legend-color" style={{ backgroundColor: '#8B4513' }}></div>
-            <span>Brown (Pin 2)</span>
-          </div>
-          <div className="legend-item">
-            <div className="legend-color" style={{ backgroundColor: '#00FF00' }}></div>
-            <span>Green (Pin 3)</span>
-          </div>
-          <div className="legend-item">
-            <div className="legend-color" style={{ backgroundColor: '#FFFF00' }}></div>
-            <span>Yellow (Pin 4)</span>
-          </div>
-          <div className="legend-item">
-            <div className="legend-color" style={{ backgroundColor: '#808080' }}></div>
-            <span>Grey (Pin 5)</span>
-          </div>
-          <div className="legend-item">
-            <div className="legend-color" style={{ backgroundColor: '#FFC0CB' }}></div>
-            <span>Pink (Pin 6)</span>
-          </div>
-          <div className="legend-item">
-            <div className="legend-color" style={{ backgroundColor: '#0000FF' }}></div>
-            <span>Blue (Pin 7)</span>
-          </div>
-          <div className="legend-item">
-            <div className="legend-color" style={{ backgroundColor: '#FF0000' }}></div>
-            <span>Red (Pin 8)</span>
-          </div>
+          {getLegendItems().map(item => (
+            <div key={item.pin} className="legend-item">
+              <div 
+                className="legend-color" 
+                style={{ 
+                  backgroundColor: item.color, 
+                  border: item.border ? '1px solid #ccc' : 'none' 
+                }}
+              ></div>
+              <span>{item.name} (Pin {item.pin})</span>
+            </div>
+          ))}
         </div>
       </div>
 

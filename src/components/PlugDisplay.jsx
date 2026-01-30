@@ -1,6 +1,6 @@
 import { colorMap, plugOptions } from '../data/plugData';
 
-export const PlugDisplay = ({ pins, title, selectedChannel, plugType, typeData }) => {
+export const PlugDisplay = ({ pins, allPins, title, selectedChannel, plugType, typeData, usedPins }) => {
   // Check if this is pulse counter
   const isPulseCounter = typeData?.value === 'pulse';
 
@@ -18,7 +18,7 @@ export const PlugDisplay = ({ pins, title, selectedChannel, plugType, typeData }
     // Communications plug: pins 3, 4, 6 (Power, GND, and Pulse input 1)
     return pins?.filter(p => p.pin === 3 || p.pin === 4 || p.pin === 6) || [];
   };
-  if (!pins || pins.length === 0) {
+  if (!allPins || allPins.length === 0) {
     return (
       <div className="plug-container">
         <h3>{title}</h3>
@@ -26,6 +26,12 @@ export const PlugDisplay = ({ pins, title, selectedChannel, plugType, typeData }
       </div>
     );
   }
+
+  // Show message when user needs to select channel/output to see used pins
+  const needsSelection = usedPins.length === 0 && (
+    (plugType === 'inputs' && typeData?.value !== 'power-input') ||
+    (plugType === 'outputs' && typeData?.value !== 'power-input')
+  );
 
   // Determine if a pin is the selected channel
   const isSelectedChannel = (pin) => {
@@ -126,15 +132,26 @@ export const PlugDisplay = ({ pins, title, selectedChannel, plugType, typeData }
         </div>
       )}
 
-      {isPulseCounter ? (
+      {needsSelection ? (
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '20px', 
+          backgroundColor: '#1a1a2e',
+          border: '1px dashed #444',
+          borderRadius: '6px',
+          color: '#888'
+        }}>
+          <p>Select a {plugType === 'inputs' ? 'channel' : 'output'} to see used pins</p>
+        </div>
+      ) : isPulseCounter ? (
         // Pulse Counter: Show both Communications and Inputs plugs
         <>
           {renderPlugTable(getPulseCounterCommsPins(), 'Inputs Plug', [3, 4])}
           {renderPlugTable(getPulseCounterInputsPins(), 'Communications Plug', [6])}
         </>
       ) : (
-        // Normal display
-        renderPlugTable(pins, 'Plug View')
+        // Normal display - show only used pins
+        renderPlugTable(pins, 'Used Pins Only')
       )}
     </div>
   );
