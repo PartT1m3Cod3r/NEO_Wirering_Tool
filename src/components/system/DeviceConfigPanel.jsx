@@ -106,6 +106,20 @@ export const DeviceConfigPanel = ({ device, onUpdate, onRemove, availableDevices
         </div>
       )}
 
+      {device.channels && device.type !== 'power-input' && (
+        <div className="config-section">
+          <label htmlFor="wire-mode-select">Wiring Mode:</label>
+          <select
+            id="wire-mode-select"
+            value={device.wireMode || '3-wire'}
+            onChange={(e) => onUpdate(device.id, { wireMode: e.target.value })}
+          >
+            <option value="2-wire">2-Wire (Signal + Power, no GND)</option>
+            <option value="3-wire">3-Wire (Signal + Power + GND)</option>
+          </select>
+        </div>
+      )}
+
       {device.outputs && (
         <div className="config-section">
           <label htmlFor="output-select">Output:</label>

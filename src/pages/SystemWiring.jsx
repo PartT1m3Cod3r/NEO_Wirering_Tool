@@ -116,11 +116,13 @@ const getUsedPins = (device) => {
       // Solar pins 1,2 already in all
     } else {
       // Map channel to pins (1=Red/Pin8, 2=Blue/Pin7, 3=Pink/Pin6, 4=Grey/Pin5)
+      // Wire mode: '2-wire' (no GND), '3-wire' (with GND - default)
+      const is2Wire = device.wireMode === '2-wire';
       const channelPins = {
-        1: { signal: [8], power: [3, 4] }, // Signal (Red/Pin8), Power (Green/Pin3), GND (Yellow/Pin4)
-        2: { signal: [7], power: [3, 4] }, // Signal (Blue/Pin7), Power, GND
-        3: { signal: [6], power: [3, 4] }, // Signal (Pink/Pin6), Power, GND
-        4: { signal: [5], power: [3, 4] }, // Signal (Grey/Pin5), Power, GND
+        1: { signal: [8], power: is2Wire ? [3] : [3, 4] }, // Signal (Red/Pin8), Power (Green/Pin3), optional GND
+        2: { signal: [7], power: is2Wire ? [3] : [3, 4] },
+        3: { signal: [6], power: is2Wire ? [3] : [3, 4] },
+        4: { signal: [5], power: is2Wire ? [3] : [3, 4] },
       };
       const channel = channelPins[device.channel];
       if (channel) {
@@ -197,11 +199,15 @@ const getDeviceTerminals = (device) => {
       );
     } else {
       const channelColors = { 1: 'red', 2: 'blue', 3: 'pink', 4: 'grey' };
+      const is2Wire = device.wireMode === '2-wire';
       terminals.push(
         { id: 'signal', name: 'Signal', color: colorMap[channelColors[device.channel]] },
-        { id: 'power+', name: 'Power+', color: colorMap.green },
-        { id: 'gnd', name: 'GND', color: colorMap.yellow }
+        { id: 'power+', name: 'Power+', color: colorMap.green }
       );
+      // Only add GND terminal for 3-wire mode
+      if (!is2Wire) {
+        terminals.push({ id: 'gnd', name: 'GND', color: colorMap.yellow });
+      }
     }
   } else if (device.plugType === 'outputs') {
     if (device.type === 'power-input') {
@@ -316,16 +322,19 @@ const createEdgesForDevice = (device) => {
         data: { label: 'Power', color: colorMap.green },
         markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.green },
       });
-      edges.push({
-        id: `${edgeId}-gnd`,
-        source: 'neo-inputs',
-        target: device.id,
-        sourceHandle: 'gnd',
-        targetHandle: 'gnd',
-        type: 'coloredWire',
-        data: { label: 'GND', color: colorMap.yellow },
-        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.yellow },
-      });
+      // Only add GND edge for 3-wire mode
+      if (device.wireMode !== '2-wire') {
+        edges.push({
+          id: `${edgeId}-gnd`,
+          source: 'neo-inputs',
+          target: device.id,
+          sourceHandle: 'gnd',
+          targetHandle: 'gnd',
+          type: 'coloredWire',
+          data: { label: 'GND', color: colorMap.yellow },
+          markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.yellow },
+        });
+      }
     }
   } else if (device.plugType === 'outputs') {
     if (device.type === 'power-input') {
@@ -711,6 +720,7 @@ export const SystemWiring = () => {
         input: deviceTemplate.inputs ? option : null,
         powerSource: deviceTemplate.powerSource ? deviceTemplate.powerSource[0] : null,
         label: deviceTemplate.label,
+        wireMode: deviceTemplate.channels ? '3-wire' : undefined,
       };
 
       // Check for conflicts with this configuration
@@ -736,6 +746,7 @@ export const SystemWiring = () => {
         input: deviceTemplate.inputs ? firstOption : null,
         powerSource: deviceTemplate.powerSource ? deviceTemplate.powerSource[0] : null,
         label: deviceTemplate.label,
+        wireMode: deviceTemplate.channels ? '3-wire' : undefined,
       };
 
       const tempDevices = [...connectedDevices, newDevice];
@@ -911,15 +922,19 @@ export const SystemWiring = () => {
           setNodes([]);
           setEdges([]);
 
-          // Set the loaded devices
-          setConnectedDevices(json);
+          // Set the loaded devices (add default wireMode for legacy devices)
+          const devicesWithWireMode = json.map(d => ({
+            ...d,
+            wireMode: d.wireMode || (d.channels && d.type !== 'power-input' ? '3-wire' : undefined)
+          }));
+          setConnectedDevices(devicesWithWireMode);
 
           // Create nodes and edges for each loaded device
           setTimeout(() => {
             const newNodes = [];
             const newEdges = [];
 
-            json.forEach((device, index) => {
+            devicesWithWireMode.forEach((device, index) => {
               const deviceCount = index;
               const yOffset = device.plugType === 'inputs' ? 50 :
                 device.plugType === 'communications' ? 350 : 650;
