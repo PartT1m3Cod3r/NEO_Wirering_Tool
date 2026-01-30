@@ -204,7 +204,7 @@ export const ReactFlowDiagram = ({ plugType, typeData, outputNumber, channelNumb
             sourceHandle: 'gnd',
             targetHandle: 'a2',
             type: 'coloredWire',
-            data: { label: 'A2 (GND)', color: colorMap.yellow },
+            data: { label: 'GND (Pin 4)', color: colorMap.yellow },
             markerEnd: {
               type: MarkerType.ArrowClosed,
               color: colorMap.yellow,
@@ -218,7 +218,7 @@ export const ReactFlowDiagram = ({ plugType, typeData, outputNumber, channelNumb
             sourceHandle: 'output',
             targetHandle: 'a1',
             type: 'coloredWire',
-            data: { label: `${output1.terminal} (Out ${outputNum})`, color: colorMap[output1.color] },
+            data: { label: `A${outputNum} (Out ${outputNum})`, color: colorMap[output1.color] },
             markerEnd: {
               type: MarkerType.ArrowClosed,
               color: colorMap[output1.color],
