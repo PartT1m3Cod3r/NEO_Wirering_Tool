@@ -17,7 +17,7 @@ const edgeTypes = {
   coloredWire: ColoredWireEdge,
 };
 
-export const ReactFlowDiagram = ({ plugType, typeData, outputNumber, channelNumber }) => {
+export const ReactFlowDiagram = ({ plugType, typeData, outputNumber, channelNumber, wireMode }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
@@ -289,13 +289,22 @@ export const ReactFlowDiagram = ({ plugType, typeData, outputNumber, channelNumb
         if (!channel) return { nodes: [], edges: [] };
 
         // Only include the selected channel
+        const is3Wire = wireMode === '3-wire';
         neoNode.data.outputs = [
           { id: 'signal', color: channel.color },
           { id: 'power', color: colorMap.green },
-          { id: 'gnd', color: colorMap.yellow }
+          ...(is3Wire ? [{ id: 'gnd', color: colorMap.yellow }] : [])
         ];
 
         // Create sensor node with selected channel
+        const terminals = [
+          { id: 'signal', name: 'Signal', color: channel.color },
+          { id: 'power+', name: 'Power+', color: colorMap.green }
+        ];
+        if (is3Wire) {
+          terminals.push({ id: 'gnd', name: 'GND', color: colorMap.yellow });
+        }
+
         deviceNode = {
           id: 'device',
           type: 'sensor',
@@ -303,11 +312,7 @@ export const ReactFlowDiagram = ({ plugType, typeData, outputNumber, channelNumb
           data: {
             label: `${typeData.label} Sensor`,
             sensorType: typeData.value,
-            terminals: [
-              { id: 'signal', name: 'Signal', color: channel.color },
-              { id: 'power+', name: 'Power+', color: colorMap.green },
-              { id: 'gnd', name: 'GND', color: colorMap.yellow }
-            ],
+            terminals: terminals,
             channel: channelNum
           },
         };
@@ -341,19 +346,22 @@ export const ReactFlowDiagram = ({ plugType, typeData, outputNumber, channelNumb
           },
         });
 
-        newEdges.push({
-          id: `e-${edgeId++}`,
-          source: 'neo',
-          target: 'device',
-          sourceHandle: 'gnd',
-          targetHandle: 'gnd',
-          type: 'coloredWire',
-          data: { label: 'GND', color: colorMap.yellow }, // Simplified label
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: colorMap.yellow,
-          },
-        });
+        // Only add GND edge for 3-wire mode
+        if (is3Wire) {
+          newEdges.push({
+            id: `e-${edgeId++}`,
+            source: 'neo',
+            target: 'device',
+            sourceHandle: 'gnd',
+            targetHandle: 'gnd',
+            type: 'coloredWire',
+            data: { label: 'GND', color: colorMap.yellow }, // Simplified label
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: colorMap.yellow,
+            },
+          });
+        }
 
       } else if (plugType === 'communications') {
         // For communications, create simplified device node
@@ -602,7 +610,7 @@ export const ReactFlowDiagram = ({ plugType, typeData, outputNumber, channelNumb
     setNodes(newNodes);
     setEdges(newEdges);
 
-  }, [plugType, typeData, outputNumber, channelNumber, setNodes, setEdges]); // Rerun when configuration changes
+  }, [plugType, typeData, outputNumber, channelNumber, wireMode, setNodes, setEdges]); // Rerun when configuration changes
 
   if (!typeData || !plugType) {
     return (

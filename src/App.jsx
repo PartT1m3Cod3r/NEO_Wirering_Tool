@@ -218,6 +218,7 @@ function App() {
           typeData={selectedTypeData}
           outputNumber={selectedOutput}
           channelNumber={selectedChannel}
+          wireMode={wireMode}
         />
       </div>
 
