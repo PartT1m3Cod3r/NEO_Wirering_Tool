@@ -3,7 +3,7 @@ export const DeviceConfigPanel = ({ device, onUpdate, onRemove, availableDevices
     return (
       <div className="device-config-panel empty">
         <h3>Device Configuration</h3>
-        <p>Select a device from the diagram to configure it</p>
+        <p>Select a device from the diagram to configure</p>
       </div>
     );
   }
@@ -22,6 +22,12 @@ export const DeviceConfigPanel = ({ device, onUpdate, onRemove, availableDevices
 
   const handlePowerSourceChange = (e) => {
     onUpdate(device.id, { powerSource: e.target.value });
+  };
+
+  const handleWireNumberChange = (edgeKey, value) => {
+    const wireNumbers = { ...(device.wireNumbers || {}) };
+    wireNumbers[edgeKey] = value;
+    onUpdate(device.id, { wireNumbers });
   };
 
   const getChannelOptions = () => {
@@ -69,6 +75,47 @@ export const DeviceConfigPanel = ({ device, onUpdate, onRemove, availableDevices
     const pins = { 1: 5, 2: 6, 3: 7, 4: 8 };
     return pins[out] || '?';
   };
+
+  // Get wire number inputs for each connection
+  const getWireNumberInputs = () => {
+    const connections = getWiringConnections(device);
+    const wireNumbers = device.wireNumbers || {};
+    
+    return connections.map((conn, idx) => {
+      // Generate edge key based on connection type
+      let edgeKey = '';
+      if (conn.label.includes('VCC') || conn.label.includes('Pin 1')) edgeKey = 'vcc';
+      else if (conn.label.includes('GND') && conn.pin === 2) edgeKey = 'gnd';
+      else if (conn.label.includes('Power') || conn.label.includes('Vout')) edgeKey = 'power';
+      else if (conn.label.includes('GND') || conn.label.includes('Sensor GND')) edgeKey = 'gnd';
+      else if (conn.label.includes('Signal')) edgeKey = 'signal';
+      else if (conn.label === 'A1' || conn.label === 'A3') edgeKey = 'a1';
+      else if (conn.label === 'A2' || conn.label === 'A4') edgeKey = 'a2';
+      else if (conn.label === 'Out 1' || conn.label === 'Out 2' || conn.label === 'Out 3' || conn.label === 'Out 4') edgeKey = 'a1';
+      else if (conn.label === 'B') edgeKey = 'b';
+      else if (conn.label === 'A') edgeKey = 'a';
+      else if (conn.label === 'D0') edgeKey = 'd0';
+      else if (conn.label === 'D1') edgeKey = 'd1';
+      else if (conn.label === 'Data') edgeKey = 'data';
+      else edgeKey = `conn-${idx}`;
+      
+      // Generate default wire number
+      const defaultWireNum = generateDefaultWireNumber(conn, idx);
+      
+      return {
+        ...conn,
+        edgeKey,
+        currentValue: wireNumbers[edgeKey] || defaultWireNum
+      };
+    });
+  };
+
+  const generateDefaultWireNumber = (conn, idx) => {
+    const baseNum = 100 + (idx * 10);
+    return `${baseNum}`;
+  };
+
+  const wireInputs = getWireNumberInputs();
 
   return (
     <div className="device-config-panel">
@@ -165,6 +212,29 @@ export const DeviceConfigPanel = ({ device, onUpdate, onRemove, availableDevices
           </select>
         </div>
       )}
+
+      {/* Wire Number Editor */}
+      <div className="config-section wire-number-section">
+        <h4>Wire Numbers</h4>
+        <div className="wire-number-list">
+          {wireInputs.map((conn, idx) => (
+            <div key={idx} className="wire-number-item">
+              <div className="wire-number-info">
+                <span className="dot" style={{ backgroundColor: conn.colorCode }}></span>
+                <span className="wire-label-text">{conn.label}</span>
+              </div>
+              <input
+                type="text"
+                value={conn.currentValue}
+                onChange={(e) => handleWireNumberChange(conn.edgeKey, e.target.value)}
+                className="wire-number-input"
+                placeholder="###"
+                maxLength={6}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="config-actions">
         <button

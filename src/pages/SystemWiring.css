@@ -1,17 +1,95 @@
+/* AutoCAD Electrical Style - System Wiring Page */
+
 /* CSS for device name input */
 .device-name-input {
   width: 100%;
   padding: 8px;
   margin-top: 5px;
   border: 1px solid var(--border-secondary);
-  border-radius: 4px;
-  background-color: var(--bg-secondary);
+  background-color: var(--input-bg);
   color: var(--text-primary);
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.9rem;
 }
 
 .device-name-input:focus {
   outline: none;
   border-color: var(--accent-color);
+  box-shadow: 0 0 0 1px var(--accent-color);
+}
+
+/* Wire Number Editor Section */
+.wire-number-section {
+  border-top: 1px solid var(--border-secondary);
+  padding-top: 12px;
+  margin-top: 15px;
+}
+
+.wire-number-section h4 {
+  margin: 0 0 10px 0;
+  color: var(--accent-color);
+  font-size: 0.85rem;
+  font-family: 'Consolas', 'Monaco', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.wire-number-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wire-number-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-secondary);
+}
+
+.wire-number-item:hover {
+  border-color: var(--border-tertiary);
+}
+
+.wire-number-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.wire-number-info .dot {
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--border-tertiary);
+  flex-shrink: 0;
+}
+
+.wire-label-text {
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.wire-number-input {
+  width: 60px;
+  padding: 4px 6px;
+  border: 1px solid var(--border-secondary);
+  background: var(--input-bg);
+  color: var(--accent-secondary);
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.85rem;
+  font-weight: bold;
+  text-align: center;
+}
+
+.wire-number-input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 1px var(--accent-color);
 }
 
 /* Wiring Legend */
@@ -23,33 +101,35 @@
 
 .wiring-legend h4 {
   margin-bottom: 10px;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
+  color: var(--accent-color);
+  font-size: 0.85rem;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  font-family: 'Consolas', 'Monaco', monospace;
 }
 
 .connection-item {
   display: flex;
   align-items: center;
-  margin-bottom: 8px;
-  font-size: 0.9rem;
-  background: var(--bg-secondary);
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  background: var(--bg-primary);
   padding: 6px 10px;
-  border-radius: 4px;
+  border: 1px solid var(--border-secondary);
+  font-family: 'Consolas', 'Monaco', monospace;
 }
 
 .connection-item .dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+  width: 12px;
+  height: 12px;
   margin-right: 10px;
-  border: 1px solid var(--border-secondary);
+  border: 1px solid var(--border-tertiary);
 }
 
 .connection-item .pin-text {
   color: var(--text-primary);
   margin-right: 8px;
+  font-weight: 600;
 }
 
 .connection-item .arrow {
@@ -65,27 +145,30 @@
 .system-wiring-page {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 60px);
+  height: calc(100vh - 50px);
   background-color: var(--bg-primary);
   color: var(--text-primary);
 }
 
 .system-header {
-  padding: 20px 30px;
+  padding: 15px 25px;
   background: var(--bg-secondary);
   border-bottom: 2px solid var(--border-color);
 }
 
 .system-header h1 {
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
   color: var(--accent-color);
-  font-size: 1.8rem;
+  font-size: 1.4rem;
+  font-family: 'Consolas', 'Monaco', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .system-header p {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .system-layout {
@@ -94,45 +177,56 @@
   overflow: hidden;
 }
 
-/* Device Palette */
+/* Device Palette - AutoCAD panel style */
 .device-palette {
-  width: 250px;
+  width: 260px;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border-secondary);
-  padding: 20px;
+  padding: 15px;
   overflow-y: auto;
 }
 
 .device-palette h3 {
   margin: 0 0 8px 0;
   color: var(--accent-color);
-  font-size: 1.1rem;
+  font-size: 0.95rem;
+  font-family: 'Consolas', 'Monaco', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--border-secondary);
+  padding-bottom: 8px;
 }
 
 .palette-hint {
-  margin: 0 0 20px 0;
+  margin: 0 0 15px 0;
   color: var(--text-secondary);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  font-style: italic;
 }
 
 .device-category {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .device-category h4 {
-  margin: 0 0 10px 0;
+  margin: 0 0 8px 0;
   color: var(--text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  background: var(--bg-primary);
+  padding: 4px 8px;
+  border-left: 3px solid var(--accent-color);
 }
 
 .device-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
+/* AutoCAD button style for devices */
 .device-item {
   display: flex;
   align-items: center;
@@ -140,24 +234,29 @@
   padding: 10px 12px;
   background: var(--bg-primary);
   border: 1px solid var(--border-secondary);
-  border-radius: 6px;
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
+  font-size: 0.85rem;
 }
 
 .device-item:hover {
   background: var(--hover-bg);
-  border-color: var(--border-color);
-  transform: translateX(4px);
+  border-color: var(--accent-color);
+  transform: translateX(3px);
+}
+
+.device-item:active {
+  background: var(--accent-color);
+  color: var(--bg-primary);
 }
 
 .device-icon {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
 }
 
 .device-label {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 /* Diagram Container */
@@ -167,6 +266,7 @@
   background: var(--bg-primary);
 }
 
+/* Conflict warning - AutoCAD style alert */
 .conflict-warning {
   position: absolute;
   bottom: 20px;
@@ -174,16 +274,18 @@
   transform: translateX(-50%);
   background: var(--error-bg);
   border: 2px solid var(--error-color);
-  padding: 15px 25px;
-  border-radius: 8px;
+  padding: 12px 20px;
   color: var(--error-color);
   font-weight: 600;
   z-index: 10;
+  font-family: 'Consolas', 'Monaco', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
-/* Config Sidebar */
+/* Config Sidebar - AutoCAD properties panel */
 .config-sidebar {
-  width: 300px;
+  width: 280px;
   background: var(--bg-secondary);
   border-left: 1px solid var(--border-secondary);
   overflow-y: auto;
@@ -193,7 +295,7 @@
 
 /* Device Config Panel */
 .device-config-panel {
-  padding: 20px;
+  padding: 15px;
   border-bottom: 1px solid var(--border-secondary);
 }
 
@@ -203,136 +305,160 @@
 }
 
 .device-config-panel h3 {
-  margin: 0 0 15px 0;
+  margin: 0 0 12px 0;
   color: var(--accent-color);
-  font-size: 1.1rem;
+  font-size: 0.95rem;
+  font-family: 'Consolas', 'Monaco', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--border-secondary);
+  padding-bottom: 8px;
 }
 
 .config-section {
-  margin-bottom: 20px;
+  margin-bottom: 15px;
 }
 
 .config-section h4 {
-  margin: 0 0 10px 0;
+  margin: 0 0 8px 0;
   color: var(--text-primary);
-  font-size: 1rem;
+  font-size: 0.85rem;
+  font-family: 'Consolas', 'Monaco', monospace;
 }
 
 .device-type,
 .device-plug {
-  margin: 5px 0;
+  margin: 4px 0;
   color: var(--text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
+  font-family: 'Consolas', 'Monaco', monospace;
 }
 
 .config-section label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  font-family: 'Consolas', 'Monaco', monospace;
+  text-transform: uppercase;
 }
 
 .config-section select {
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 10px;
   background: var(--bg-primary);
   border: 1px solid var(--border-secondary);
-  border-radius: 6px;
   color: var(--text-primary);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   cursor: pointer;
+  font-family: 'Consolas', 'Monaco', monospace;
 }
 
 .config-section select:focus {
   outline: none;
   border-color: var(--accent-color);
+  box-shadow: 0 0 0 1px var(--accent-color);
 }
 
 .config-actions {
-  margin-top: 20px;
+  margin-top: 15px;
 }
 
+/* AutoCAD style button */
 .btn-remove {
   width: 100%;
-  padding: 12px;
+  padding: 10px;
   background: var(--error-bg);
   border: 1px solid var(--error-color);
-  border-radius: 6px;
   color: var(--error-color);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
+  font-family: 'Consolas', 'Monaco', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .btn-remove:hover {
-  background: var(--error-hover);
+  background: var(--error-color);
+  color: var(--bg-primary);
 }
 
 /* Pin Usage Summary */
 .pin-usage-summary {
-  padding: 20px;
+  padding: 15px;
   flex: 1;
 }
 
 .pin-usage-summary h3 {
-  margin: 0 0 15px 0;
+  margin: 0 0 12px 0;
   color: var(--accent-color);
-  font-size: 1.1rem;
+  font-size: 0.95rem;
+  font-family: 'Consolas', 'Monaco', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--border-secondary);
+  padding-bottom: 8px;
 }
 
 .empty-message {
   color: var(--text-secondary);
   font-style: italic;
+  font-size: 0.85rem;
 }
 
 .device-count {
-  margin-bottom: 15px;
-  padding: 10px;
+  margin-bottom: 12px;
+  padding: 8px 10px;
   background: var(--bg-primary);
-  border-radius: 6px;
+  border: 1px solid var(--border-secondary);
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  font-family: 'Consolas', 'Monaco', monospace;
 }
 
 .conflict-alert {
-  margin-bottom: 20px;
-  padding: 15px;
+  margin-bottom: 15px;
+  padding: 12px;
   background: var(--error-bg);
   border: 1px solid var(--error-color);
-  border-radius: 6px;
   color: var(--error-color);
+  font-family: 'Consolas', 'Monaco', monospace;
 }
 
 .conflict-alert strong {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .conflict-alert ul {
   margin: 0;
-  padding-left: 20px;
+  padding-left: 18px;
 }
 
 .conflict-alert li {
-  margin: 4px 0;
-  font-size: 0.85rem;
+  margin: 3px 0;
+  font-size: 0.8rem;
 }
 
 .pin-list h4 {
-  margin: 0 0 10px 0;
+  margin: 0 0 8px 0;
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  font-family: 'Consolas', 'Monaco', monospace;
+  text-transform: uppercase;
 }
 
 .pin-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px;
+  gap: 10px;
+  padding: 8px 10px;
   background: var(--bg-primary);
   border: 1px solid var(--border-secondary);
-  border-radius: 6px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .pin-item.conflict {
@@ -341,10 +467,10 @@
 }
 
 .pin-indicator {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
+  border: 1px solid var(--border-tertiary);
 }
 
 .pin-info {
@@ -356,34 +482,37 @@
 .pin-number {
   font-weight: 600;
   color: var(--text-primary);
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.85rem;
 }
 
 .pin-color-name {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
 }
 
 .pin-device-count {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
+  font-style: italic;
 }
 
 /* Plug-specific pin sections */
 .plug-pin-section {
-  margin-bottom: 15px;
+  margin-bottom: 12px;
 }
 
 .plug-pin-section h5 {
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
   color: var(--accent-color);
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  font-family: 'Consolas', 'Monaco', monospace;
 }
 
 .pin-item.power-pin {
-  border-color: #8a8a7a;
-  background: var(--bg-primary);
+  border-color: #6a6a5a;
 }
 
 .pin-item.power-pin .pin-device-count {
@@ -392,49 +521,398 @@
 }
 
 .pin-item.solar-pin {
-  border-color: #cc9933;
-  background: var(--bg-primary);
+  border-color: #aa8833;
 }
 
 .pin-item.solar-pin .pin-device-count {
-  color: #cc9933;
+  color: #aa8833;
   font-style: italic;
 }
 
-/* Battery Node Styles */
+/* Battery Node Styles - AutoCAD style */
 .battery-node {
   background: var(--bg-secondary);
   border: 2px solid var(--border-color);
-  border-radius: 12px;
   padding: 10px;
-  min-width: 180px;
-  box-shadow: 0 4px 20px var(--shadow-color);
+  min-width: 160px;
 }
 
 .battery-node .node-header h4 {
   color: var(--accent-color);
-  font-size: 1em;
+  font-size: 0.9em;
   margin: 0;
+  font-family: 'Consolas', 'Monaco', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
-/* Scrollbar styling */
+/* Diagram Actions - AutoCAD toolbar style */
+.diagram-actions {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-secondary) !important;
+  padding: 8px !important;
+  gap: 6px !important;
+}
+
+.diagram-actions .action-btn {
+  font-family: 'Consolas', 'Monaco', monospace !important;
+  font-size: 0.8rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 0 !important;
+  padding: 8px 12px !important;
+  border: 1px solid var(--border-secondary) !important;
+}
+
+.diagram-actions .action-btn:hover {
+  border-color: var(--accent-color) !important;
+}
+
+/* Scrollbar styling - AutoCAD dark */
 .device-palette::-webkit-scrollbar,
 .config-sidebar::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 
 .device-palette::-webkit-scrollbar-track,
 .config-sidebar::-webkit-scrollbar-track {
   background: var(--bg-primary);
+  border-left: 1px solid var(--border-secondary);
 }
 
 .device-palette::-webkit-scrollbar-thumb,
 .config-sidebar::-webkit-scrollbar-thumb {
   background: var(--border-secondary);
-  border-radius: 4px;
+  border: 1px solid var(--border-tertiary);
 }
 
 .device-palette::-webkit-scrollbar-thumb:hover,
 .config-sidebar::-webkit-scrollbar-thumb:hover {
   background: var(--accent-color);
+}
+
+/* ============================================================================
+   AutoCAD ELECTRICAL NODE STYLES
+   ============================================================================ */
+
+/* Base node styling - IEC symbol style */
+.acad-node {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  font-family: 'Consolas', 'Monaco', monospace;
+  position: relative;
+}
+
+.acad-node::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border: 1px dashed var(--border-secondary);
+  pointer-events: none;
+}
+
+.acad-node.selected {
+  border-color: var(--accent-secondary);
+  box-shadow: 0 0 0 2px var(--accent-secondary);
+}
+
+/* Node header with reference designator */
+.acad-node-header {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-secondary);
+  padding: 4px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.acad-ref-des {
+  font-size: 10px;
+  color: var(--accent-secondary);
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+.acad-device-type {
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+/* Node body with terminals */
+.acad-node-body {
+  padding: 8px;
+  position: relative;
+}
+
+.acad-node-title {
+  font-size: 11px;
+  color: var(--text-primary);
+  text-align: center;
+  margin-bottom: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Terminal styling - IEC standard */
+.acad-terminals {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.acad-terminal {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+}
+
+.acad-terminal-point {
+  width: 8px;
+  height: 8px;
+  background: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.acad-terminal-label {
+  color: var(--text-secondary);
+  font-size: 9px;
+  min-width: 30px;
+}
+
+.acad-terminal-wire {
+  flex: 1;
+  height: 2px;
+  background: var(--border-secondary);
+}
+
+/* Neo Device Node - Terminal strip style */
+.neo-device-acad {
+  min-width: 140px;
+  background: var(--bg-secondary);
+  border: 2px solid var(--accent-color);
+}
+
+.neo-device-acad .acad-node-header {
+  background: var(--accent-color);
+  color: var(--bg-primary);
+}
+
+.neo-device-acad .acad-ref-des {
+  color: var(--bg-primary);
+}
+
+.neo-device-acad .acad-device-type {
+  color: rgba(0,0,0,0.7);
+}
+
+/* M12 Connector representation */
+.m12-connector {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-secondary);
+  margin: 8px;
+}
+
+.m12-pin {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid var(--border-tertiary);
+  position: relative;
+}
+
+.m12-pin::after {
+  content: attr(data-pin);
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8px;
+  color: var(--text-muted);
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.m12-pin.connected {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 4px var(--accent-color);
+}
+
+/* Sensor Node - Rectangle with terminals */
+.sensor-node-acad {
+  min-width: 100px;
+}
+
+.sensor-symbol {
+  width: 40px;
+  height: 30px;
+  border: 2px solid var(--text-primary);
+  margin: 0 auto 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.sensor-symbol::before {
+  content: '~';
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+/* Relay Node - Coil symbol */
+.relay-node-acad {
+  min-width: 100px;
+}
+
+.relay-coil {
+  width: 30px;
+  height: 40px;
+  margin: 0 auto 8px;
+  position: relative;
+}
+
+.relay-coil::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 2px solid var(--text-primary);
+  border-radius: 0 15px 0 15px;
+}
+
+/* Latching Relay - Two coil symbols */
+.latching-relay-acad {
+  min-width: 120px;
+}
+
+.latching-coils {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.latching-coils .relay-coil {
+  width: 20px;
+  height: 35px;
+}
+
+.latching-coils .relay-coil::before {
+  border-radius: 0 10px 0 10px;
+}
+
+/* Battery/Power Node - DC source symbol */
+.battery-node-acad {
+  min-width: 100px;
+}
+
+.battery-symbol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0 auto 8px;
+  height: 40px;
+}
+
+.battery-line-long {
+  width: 4px;
+  height: 30px;
+  background: var(--text-primary);
+}
+
+.battery-line-short {
+  width: 4px;
+  height: 18px;
+  background: var(--text-primary);
+}
+
+/* Wire label tags - AutoCAD Electrical style */
+.wire-label {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 9px;
+  fill: var(--accent-secondary);
+  font-weight: bold;
+}
+
+.wire-label-bg {
+  fill: var(--bg-primary);
+  stroke: var(--border-secondary);
+  stroke-width: 1;
+}
+
+/* Connection points - visible terminals */
+.connection-point {
+  width: 10px;
+  height: 10px;
+  background: var(--bg-primary);
+  border: 2px solid var(--accent-color);
+  border-radius: 50%;
+  position: absolute;
+}
+
+.connection-point:hover {
+  background: var(--accent-color);
+  box-shadow: 0 0 8px var(--accent-color);
+}
+
+/* Handle styling - AutoCAD grip style */
+.react-flow__handle {
+  width: 10px;
+  height: 10px;
+  background: var(--bg-primary);
+  border: 2px solid var(--accent-color);
+}
+
+.react-flow__handle:hover {
+  background: var(--accent-color);
+  box-shadow: 0 0 8px var(--accent-color);
+}
+
+/* Edge labels - Wire numbers */
+.react-flow__edge-label {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 10px;
+}
+
+.react-flow__edge-label > div {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-secondary);
+  padding: 2px 6px;
+  color: var(--accent-secondary);
+}
+
+/* Drawing border simulation */
+.drawing-border {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
+  border: 1px solid var(--border-secondary);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.drawing-border-title {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-bottom: none;
+  border-right: none;
+  padding: 10px 20px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 10px;
+  color: var(--text-secondary);
 }

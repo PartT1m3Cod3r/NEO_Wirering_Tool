@@ -9,6 +9,8 @@ import ReactFlow, {
   addEdge,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { NeoDeviceNode } from '../components/nodes/NeoDeviceNode';
 import { SensorNode } from '../components/nodes/SensorNode';
 import { RelayNode } from '../components/nodes/RelayNode';
@@ -264,9 +266,32 @@ const getDeviceTerminals = (device) => {
 };
 
 // Create edges for a device (pure function - moved outside component)
+// Generate default wire number based on edge type and device
+const generateDefaultWireNumber = (edgeType, device) => {
+  // Use device channel/output to generate consistent wire numbers
+  const baseNum = device.channel || device.output || device.input || 1;
+  
+  const wireNumberMap = {
+    'vcc': '101',
+    'gnd': '102', 
+    'power': '103',
+    'signal': `${200 + baseNum}`,
+    'a1': `${300 + (device.output || 1)}`,
+    'a2': `${400 + (device.output || 1)}`,
+    'a': '501',
+    'b': '502',
+    'd0': '601',
+    'd1': '602',
+    'data': '701',
+  };
+  
+  return wireNumberMap[edgeType] || '100';
+};
+
 const createEdgesForDevice = (device) => {
   const edges = [];
   const edgeId = `e-${device.id}`; // Use stable ID prefix based on device ID
+  const wireNumbers = device.wireNumbers || {};
 
   if (device.plugType === 'inputs') {
     if (device.type === 'power-input') {
@@ -278,7 +303,11 @@ const createEdgesForDevice = (device) => {
         sourceHandle: 'vcc+',
         targetHandle: 'vcc',
         type: 'coloredWire',
-        data: { label: 'VCC+ (Pin 1)', color: colorMap.white },
+        data: { 
+          label: 'VCC+ (Pin 1)', 
+          color: colorMap.white,
+          wireNumber: wireNumbers['vcc'] || generateDefaultWireNumber('vcc', device)
+        },
         markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.white },
       });
       edges.push({
@@ -288,7 +317,11 @@ const createEdgesForDevice = (device) => {
         sourceHandle: 'gnd',
         targetHandle: 'gnd',
         type: 'coloredWire',
-        data: { label: 'GND (Pin 2)', color: colorMap.brown },
+        data: { 
+          label: 'GND (Pin 2)', 
+          color: colorMap.brown,
+          wireNumber: wireNumbers['gnd'] || generateDefaultWireNumber('gnd', device)
+        },
         markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.brown },
       });
     } else {
@@ -307,7 +340,11 @@ const createEdgesForDevice = (device) => {
           sourceHandle: sourceHandle,
           targetHandle: 'signal',
           type: 'coloredWire',
-          data: { label: 'Signal', color: color },
+          data: { 
+            label: 'Signal', 
+            color: color,
+            wireNumber: wireNumbers['signal'] || generateDefaultWireNumber('signal', device)
+          },
           markerEnd: { type: MarkerType.ArrowClosed, color: color },
         });
       }
@@ -319,7 +356,11 @@ const createEdgesForDevice = (device) => {
         sourceHandle: 'power',
         targetHandle: 'power+',
         type: 'coloredWire',
-        data: { label: 'Power', color: colorMap.green },
+        data: { 
+          label: 'Power', 
+          color: colorMap.green,
+          wireNumber: wireNumbers['power'] || generateDefaultWireNumber('power', device)
+        },
         markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.green },
       });
       // Only add GND edge for 3-wire mode
@@ -331,7 +372,11 @@ const createEdgesForDevice = (device) => {
           sourceHandle: 'gnd',
           targetHandle: 'gnd',
           type: 'coloredWire',
-          data: { label: 'GND', color: colorMap.yellow },
+          data: { 
+            label: 'GND', 
+            color: colorMap.yellow,
+            wireNumber: wireNumbers['gnd'] || generateDefaultWireNumber('gnd', device)
+          },
           markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.yellow },
         });
       }
@@ -346,7 +391,11 @@ const createEdgesForDevice = (device) => {
         sourceHandle: 'vcc+',
         targetHandle: 'vcc',
         type: 'coloredWire',
-        data: { label: 'VCC+ (Pin 1)', color: colorMap.white },
+        data: { 
+          label: 'VCC+ (Pin 1)', 
+          color: colorMap.white,
+          wireNumber: wireNumbers['vcc'] || generateDefaultWireNumber('vcc', device)
+        },
         markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.white },
       });
       edges.push({
@@ -356,7 +405,11 @@ const createEdgesForDevice = (device) => {
         sourceHandle: 'gnd',
         targetHandle: 'gnd',
         type: 'coloredWire',
-        data: { label: 'GND (Pin 2)', color: colorMap.brown },
+        data: { 
+          label: 'GND (Pin 2)', 
+          color: colorMap.brown,
+          wireNumber: wireNumbers['gnd'] || generateDefaultWireNumber('gnd', device)
+        },
         markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.brown },
       });
     } else if (device.type === 'latching') {
@@ -371,7 +424,11 @@ const createEdgesForDevice = (device) => {
         sourceHandle: pinMap[0],
         targetHandle: 'a1',
         type: 'coloredWire',
-        data: { label: outputLabels[0], color: colorMap[outputColors[0]] },
+        data: { 
+          label: outputLabels[0], 
+          color: colorMap[outputColors[0]],
+          wireNumber: wireNumbers['a1'] || generateDefaultWireNumber('a1', device)
+        },
         markerEnd: { type: MarkerType.ArrowClosed, color: colorMap[outputColors[0]] },
       });
       edges.push({
@@ -381,7 +438,11 @@ const createEdgesForDevice = (device) => {
         sourceHandle: pinMap[1],
         targetHandle: 'a2',
         type: 'coloredWire',
-        data: { label: outputLabels[1], color: colorMap[outputColors[1]] },
+        data: { 
+          label: outputLabels[1], 
+          color: colorMap[outputColors[1]],
+          wireNumber: wireNumbers['a2'] || generateDefaultWireNumber('a2', device)
+        },
         markerEnd: { type: MarkerType.ArrowClosed, color: colorMap[outputColors[1]] },
       });
     } else {
@@ -400,7 +461,11 @@ const createEdgesForDevice = (device) => {
           sourceHandle: sourceHandle,
           targetHandle: 'a1',
           type: 'coloredWire',
-          data: { label: `Out ${output}`, color: color },
+          data: { 
+            label: `Out ${output}`, 
+            color: color,
+            wireNumber: wireNumbers['a1'] || generateDefaultWireNumber('a1', device)
+          },
           markerEnd: { type: MarkerType.ArrowClosed, color: color },
         });
       }
@@ -412,7 +477,11 @@ const createEdgesForDevice = (device) => {
         sourceHandle: 'gnd',
         targetHandle: 'a2',
         type: 'coloredWire',
-        data: { label: 'GND', color: colorMap.yellow },
+        data: { 
+          label: 'GND', 
+          color: colorMap.yellow,
+          wireNumber: wireNumbers['a2'] || generateDefaultWireNumber('a2', device)
+        },
         markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.yellow },
       });
     }
@@ -426,7 +495,11 @@ const createEdgesForDevice = (device) => {
         sourceHandle: 'vcc+',
         targetHandle: 'vcc',
         type: 'coloredWire',
-        data: { label: 'VCC+ (Pin 1)', color: colorMap.white },
+        data: { 
+          label: 'VCC+ (Pin 1)', 
+          color: colorMap.white,
+          wireNumber: wireNumbers['vcc'] || generateDefaultWireNumber('vcc', device)
+        },
         markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.white },
       });
       edges.push({
@@ -436,7 +509,11 @@ const createEdgesForDevice = (device) => {
         sourceHandle: 'gnd',
         targetHandle: 'gnd',
         type: 'coloredWire',
-        data: { label: 'GND (Pin 2)', color: colorMap.brown },
+        data: { 
+          label: 'GND (Pin 2)', 
+          color: colorMap.brown,
+          wireNumber: wireNumbers['gnd'] || generateDefaultWireNumber('gnd', device)
+        },
         markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.brown },
       });
     } else if (device.type === 'rs485') {
@@ -447,7 +524,11 @@ const createEdgesForDevice = (device) => {
         sourceHandle: 'b',
         targetHandle: 'b',
         type: 'coloredWire',
-        data: { label: 'B', color: colorMap.green },
+        data: { 
+          label: 'B', 
+          color: colorMap.green,
+          wireNumber: wireNumbers['b'] || generateDefaultWireNumber('b', device)
+        },
         markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.green },
       });
       edges.push({
@@ -457,7 +538,11 @@ const createEdgesForDevice = (device) => {
         sourceHandle: 'a',
         targetHandle: 'a',
         type: 'coloredWire',
-        data: { label: 'A', color: colorMap.yellow },
+        data: { 
+          label: 'A', 
+          color: colorMap.yellow,
+          wireNumber: wireNumbers['a'] || generateDefaultWireNumber('a', device)
+        },
         markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.yellow },
       });
     } else if (device.type === 'wiegand') {
@@ -468,7 +553,11 @@ const createEdgesForDevice = (device) => {
         sourceHandle: 'd0',
         targetHandle: 'd0',
         type: 'coloredWire',
-        data: { label: 'D0', color: colorMap.pink },
+        data: { 
+          label: 'D0', 
+          color: colorMap.pink,
+          wireNumber: wireNumbers['d0'] || generateDefaultWireNumber('d0', device)
+        },
         markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.pink },
       });
       edges.push({
@@ -478,7 +567,11 @@ const createEdgesForDevice = (device) => {
         sourceHandle: 'd1',
         targetHandle: 'd1',
         type: 'coloredWire',
-        data: { label: 'D1', color: colorMap.grey },
+        data: { 
+          label: 'D1', 
+          color: colorMap.grey,
+          wireNumber: wireNumbers['d1'] || generateDefaultWireNumber('d1', device)
+        },
         markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.grey },
       });
     } else if (device.type === 'sdi12') {
@@ -489,7 +582,11 @@ const createEdgesForDevice = (device) => {
         sourceHandle: 'data',
         targetHandle: 'data',
         type: 'coloredWire',
-        data: { label: 'Data', color: colorMap.blue },
+        data: { 
+          label: 'Data', 
+          color: colorMap.blue,
+          wireNumber: wireNumbers['data'] || generateDefaultWireNumber('data', device)
+        },
         markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.blue },
       });
       edges.push({
@@ -499,7 +596,11 @@ const createEdgesForDevice = (device) => {
         sourceHandle: 'gnd',
         targetHandle: 'gnd',
         type: 'coloredWire',
-        data: { label: 'GND', color: colorMap.red },
+        data: { 
+          label: 'GND', 
+          color: colorMap.red,
+          wireNumber: wireNumbers['gnd'] || generateDefaultWireNumber('gnd', device)
+        },
         markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.red },
       });
     } else if (device.type === 'pulse') {
@@ -514,7 +615,11 @@ const createEdgesForDevice = (device) => {
         sourceHandle: device.input === 2 ? 'pin-5' : 'pin-6',
         targetHandle: 'signal',
         type: 'coloredWire',
-        data: { label: 'Signal', color: device.input === 2 ? colorMap.grey : colorMap.pink },
+        data: { 
+          label: 'Signal', 
+          color: device.input === 2 ? colorMap.grey : colorMap.pink,
+          wireNumber: wireNumbers['signal'] || generateDefaultWireNumber('signal', device)
+        },
         markerEnd: { type: MarkerType.ArrowClosed, color: device.input === 2 ? colorMap.grey : colorMap.pink },
       });
       // Power from Inputs plug (Neo Inputs node)
@@ -525,7 +630,11 @@ const createEdgesForDevice = (device) => {
         sourceHandle: 'power',
         targetHandle: 'power',
         type: 'coloredWire',
-        data: { label: 'Power', color: colorMap.green },
+        data: { 
+          label: 'Power', 
+          color: colorMap.green,
+          wireNumber: wireNumbers['power'] || generateDefaultWireNumber('power', device)
+        },
         markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.green },
       });
       edges.push({
@@ -535,7 +644,11 @@ const createEdgesForDevice = (device) => {
         sourceHandle: 'gnd',
         targetHandle: 'gnd',
         type: 'coloredWire',
-        data: { label: 'GND', color: colorMap.yellow },
+        data: { 
+          label: 'GND', 
+          color: colorMap.yellow,
+          wireNumber: wireNumbers['gnd'] || generateDefaultWireNumber('gnd', device)
+        },
         markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.yellow },
       });
     }
@@ -1230,6 +1343,371 @@ export const SystemWiring = () => {
     }
   }, []);
 
+  // Export PDF Report with BOM, Connections, and Diagram
+  const handleExportPDF = useCallback(async () => {
+    if (!reactFlowWrapper.current) {
+      console.warn('Export: ReactFlow wrapper not found');
+      return;
+    }
+
+    try {
+      const { toSvg } = await import('html-to-image');
+      const container = reactFlowWrapper.current;
+
+      // Hide UI elements and grid during capture
+      const selectorsToHide = ['.diagram-actions', '.conflict-warning', '.react-flow__controls', '.react-flow__minimap', '.react-flow__attribution'];
+      const elementsToRestore = [];
+      
+      selectorsToHide.forEach(selector => {
+        const el = container.querySelector(selector);
+        if (el) {
+          elementsToRestore.push({ element: el, originalDisplay: el.style.display });
+          el.style.display = 'none';
+        }
+      });
+
+      // Hide the grid/background dots
+      const bgElement = container.querySelector('.react-flow__background');
+      if (bgElement) {
+        elementsToRestore.push({ element: bgElement, originalDisplay: bgElement.style.display });
+        bgElement.style.display = 'none';
+      }
+
+      const isDarkTheme = document.body.getAttribute('data-theme') !== 'light';
+      const bgColor = isDarkTheme ? '#000000' : '#ffffff';
+      
+      const reactFlowEl = container.querySelector('.react-flow');
+      if (!reactFlowEl) throw new Error('ReactFlow element not found');
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Find bounds of all nodes using React Flow's internal positioning
+      const nodes = reactFlowWrapper.current.querySelectorAll('.react-flow__node');
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      
+      nodes.forEach(node => {
+        // Parse the style attribute for transform
+        const style = node.getAttribute('style') || '';
+        const translateMatch = style.match(/translate\(([^,]+)px,\s*([^)]+)px\)/);
+        
+        if (translateMatch) {
+          const x = parseFloat(translateMatch[1]);
+          const y = parseFloat(translateMatch[2]);
+          const width = node.offsetWidth || 160;
+          const height = node.offsetHeight || 140;
+          
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x + width);
+          maxY = Math.max(maxY, y + height);
+        }
+      });
+      
+      // Default to container size if no nodes found
+      if (minX === Infinity) {
+        minX = 0;
+        minY = 0;
+        maxX = reactFlowEl.offsetWidth;
+        maxY = reactFlowEl.offsetHeight;
+      }
+      
+      // Add padding
+      const padding = 80;
+      minX = Math.max(0, minX - padding);
+      minY = Math.max(0, minY - padding);
+      maxX = maxX + padding;
+      maxY = maxY + padding;
+      
+      // Capture dimensions
+      const captureWidth = maxX;
+      const captureHeight = maxY;
+
+      // Capture the full diagram
+      const svgDataUrl = await toSvg(reactFlowEl, {
+        backgroundColor: bgColor,
+        width: captureWidth,
+        height: captureHeight,
+        pixelRatio: 2,
+        style: { overflow: 'visible' },
+        filter: (node) => {
+          if (node.classList) {
+            if (node.classList.contains('react-flow__controls')) return false;
+            if (node.classList.contains('react-flow__minimap')) return false;
+            if (node.classList.contains('react-flow__attribution')) return false;
+            if (node.classList.contains('react-flow__background')) return false;
+          }
+          return true;
+        }
+      });
+
+      // Restore hidden elements
+      elementsToRestore.forEach(({ element, originalDisplay }) => {
+        element.style.display = originalDisplay || '';
+      });
+
+      // Create PDF
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 15;
+      const timestamp = new Date().toISOString().slice(0, 10);
+
+      // Header
+      doc.setFillColor(0, 0, 0);
+      doc.rect(0, 0, pageWidth, 25, 'F');
+      doc.setTextColor(0, 255, 255);
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('NEO WIRING SYSTEM REPORT', margin, 12);
+      doc.setFontSize(10);
+      doc.text(`Generated: ${timestamp}`, margin, 18);
+
+      let yPos = 35;
+
+      // Bill of Materials Section
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('1. BILL OF MATERIALS', margin, yPos);
+      yPos += 8;
+
+      // BOM Table
+      const bomData = connectedDevices.map((device, idx) => [
+        idx + 1,
+        device.label,
+        device.type.toUpperCase(),
+        device.plugType.toUpperCase(),
+        device.channel || device.output || device.input || '-',
+        device.wireMode || '-'
+      ]);
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [['#', 'Device Name', 'Type', 'Plug', 'Channel/Output', 'Wire Mode']],
+        body: bomData,
+        theme: 'grid',
+        headStyles: { fillColor: [0, 168, 150], textColor: [0, 0, 0], fontStyle: 'bold' },
+        styles: { fontSize: 9, cellPadding: 2 },
+        columnStyles: {
+          0: { cellWidth: 10 },
+          1: { cellWidth: 50 },
+          2: { cellWidth: 35 },
+          3: { cellWidth: 30 },
+          4: { cellWidth: 25 },
+          5: { cellWidth: 25 }
+        }
+      });
+
+      yPos = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 15 : yPos + 40;
+
+      // Connections Section
+      if (yPos > 200) {
+        doc.addPage();
+        yPos = 20;
+      }
+
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('2. CONNECTION SCHEDULE', margin, yPos);
+      yPos += 8;
+
+      // Connection data
+      const connectionData = [];
+      connectedDevices.forEach(device => {
+        const pins = getUsedPins(device);
+        const wireNumbers = device.wireNumbers || {};
+        
+        if (device.plugType === 'inputs') {
+          if (device.type === 'power-input') {
+            connectionData.push([
+              device.label,
+              'VCC+',
+              '1',
+              'White',
+              wireNumbers['vcc'] || '101'
+            ]);
+            connectionData.push([
+              device.label,
+              'GND',
+              '2',
+              'Brown',
+              wireNumbers['gnd'] || '102'
+            ]);
+          } else {
+            const pinMap = { 1: 8, 2: 7, 3: 6, 4: 5 };
+            const signalPin = pinMap[device.channel];
+            const colorMap = { 8: 'Red', 7: 'Blue', 6: 'Pink', 5: 'Grey' };
+            
+            connectionData.push([
+              device.label,
+              'Signal',
+              signalPin.toString(),
+              colorMap[signalPin],
+              wireNumbers['signal'] || `${200 + device.channel}`
+            ]);
+            connectionData.push([
+              device.label,
+              'Power',
+              '3',
+              'Green',
+              wireNumbers['power'] || '103'
+            ]);
+            if (device.wireMode !== '2-wire') {
+              connectionData.push([
+                device.label,
+                'GND',
+                '4',
+                'Yellow',
+                wireNumbers['gnd'] || '104'
+              ]);
+            }
+          }
+        } else if (device.plugType === 'outputs') {
+          if (device.type === 'power-input') {
+            connectionData.push([device.label, 'VCC+', '1', 'White', wireNumbers['vcc'] || '101']);
+            connectionData.push([device.label, 'GND', '2', 'Brown', wireNumbers['gnd'] || '102']);
+          } else if (device.type === 'latching') {
+            const pins = device.output === 1 ? ['5', '6'] : ['7', '8'];
+            const colors = device.output === 1 ? ['Grey', 'Pink'] : ['Blue', 'Red'];
+            connectionData.push([device.label, 'A1', pins[0], colors[0], wireNumbers['a1'] || `${300 + device.output}`]);
+            connectionData.push([device.label, 'A2', pins[1], colors[1], wireNumbers['a2'] || `${400 + device.output}`]);
+          } else {
+            const pinMap = { 1: '5', 2: '6', 3: '7', 4: '8' };
+            const colorMap = { 1: 'Grey', 2: 'Pink', 3: 'Blue', 4: 'Red' };
+            connectionData.push([device.label, `Out ${device.output}`, pinMap[device.output], colorMap[device.output], wireNumbers['a1'] || `${300 + device.output}`]);
+            connectionData.push([device.label, 'GND', '4', 'Yellow', wireNumbers['a2'] || '104']);
+          }
+        } else if (device.plugType === 'communications') {
+          if (device.type === 'power-input') {
+            connectionData.push([device.label, 'VCC+', '1', 'White', wireNumbers['vcc'] || '101']);
+            connectionData.push([device.label, 'GND', '2', 'Brown', wireNumbers['gnd'] || '102']);
+          } else if (device.type === 'rs485') {
+            connectionData.push([device.label, 'B', '3', 'Green', wireNumbers['b'] || '501']);
+            connectionData.push([device.label, 'A', '4', 'Yellow', wireNumbers['a'] || '502']);
+          } else if (device.type === 'wiegand') {
+            connectionData.push([device.label, 'D0', '6', 'Pink', wireNumbers['d0'] || '601']);
+            connectionData.push([device.label, 'D1', '5', 'Grey', wireNumbers['d1'] || '602']);
+          } else if (device.type === 'sdi12') {
+            connectionData.push([device.label, 'Data', '7', 'Blue', wireNumbers['data'] || '701']);
+            connectionData.push([device.label, 'GND', '8', 'Red', wireNumbers['gnd'] || '102']);
+          } else if (device.type === 'pulse') {
+            const pin = device.input === 2 ? '5' : '6';
+            const color = device.input === 2 ? 'Grey' : 'Pink';
+            connectionData.push([device.label, 'Signal', pin, color, wireNumbers['signal'] || `${600 + (device.input || 1)}`]);
+            connectionData.push([device.label, 'Power', '3', 'Green', wireNumbers['power'] || '103']);
+            connectionData.push([device.label, 'GND', '4', 'Yellow', wireNumbers['gnd'] || '104']);
+          }
+        }
+      });
+
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Device', 'Function', 'Pin', 'Color', 'Wire #']],
+        body: connectionData,
+        theme: 'grid',
+        headStyles: { fillColor: [0, 168, 150], textColor: [0, 0, 0], fontStyle: 'bold' },
+        styles: { fontSize: 8, cellPadding: 2 },
+        columnStyles: {
+          0: { cellWidth: 45 },
+          1: { cellWidth: 25 },
+          2: { cellWidth: 15 },
+          3: { cellWidth: 25 },
+          4: { cellWidth: 20 }
+        }
+      });
+
+      // Convert SVG to PNG for PDF with 2x larger canvas
+      const svgToPng = async (svgUrl) => {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            // Make canvas 2x larger to ensure full coverage
+            canvas.width = img.width * 2;
+            canvas.height = img.height * 2;
+            const ctx = canvas.getContext('2d');
+            // Fill with white/black background
+            ctx.fillStyle = isDarkTheme ? '#000000' : '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Draw image scaled to fit the larger canvas
+            ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/png'));
+          };
+          img.onerror = reject;
+          img.src = svgUrl;
+        });
+      };
+
+      const pngDataUrl = await svgToPng(svgDataUrl);
+
+      // Add diagram on a LANDSCAPE page for better fit
+      doc.addPage('a4', 'landscape');
+      const landscapeWidth = doc.internal.pageSize.getWidth(); // 297mm
+      const landscapeHeight = doc.internal.pageSize.getHeight(); // 210mm
+      
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('3. WIRING DIAGRAM', margin, 12);
+
+      // Calculate image dimensions to fit landscape page
+      const availableWidth = landscapeWidth - (margin * 2);
+      const availableHeight = landscapeHeight - 20; // Leave room for header
+      
+      const imgAspectRatio = captureWidth / captureHeight;
+      const pageAspectRatio = availableWidth / availableHeight;
+      
+      let finalWidth, finalHeight;
+      
+      if (imgAspectRatio > pageAspectRatio) {
+        // Image is wider than page - fit to width
+        finalWidth = availableWidth;
+        finalHeight = finalWidth / imgAspectRatio;
+      } else {
+        // Image is taller than page - fit to height
+        finalHeight = availableHeight;
+        finalWidth = finalHeight * imgAspectRatio;
+      }
+      
+      // Ensure minimum size
+      finalWidth = Math.max(finalWidth, 150);
+      finalHeight = Math.max(finalHeight, 100);
+      
+      // Position image aligned to left margin (not centered) to show all nodes
+      // This prevents right-side sensors from being cut off
+      const xOffset = margin;
+      const yOffset = 18;
+      
+      // Scale down if too wide to fit
+      if (finalWidth > availableWidth) {
+        const scale = availableWidth / finalWidth;
+        finalWidth = availableWidth;
+        finalHeight = finalHeight * scale;
+      }
+
+      doc.addImage(pngDataUrl, 'PNG', xOffset, yOffset, finalWidth, finalHeight);
+
+      // Footer on all pages
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        const currentWidth = doc.internal.pageSize.getWidth();
+        const currentHeight = doc.internal.pageSize.getHeight();
+        doc.setFontSize(8);
+        doc.setTextColor(128, 128, 128);
+        doc.text(`Page ${i} of ${pageCount} - NEO Wiring System Report`, margin, currentHeight - 5);
+        doc.text('NEO Wiring Tool', currentWidth - margin - 35, currentHeight - 5);
+      }
+
+      // Save PDF
+      doc.save(`neo_wiring_report_${timestamp}.pdf`);
+
+    } catch (err) {
+      console.error('Error exporting PDF:', err);
+      alert('Failed to export PDF. Please try again.');
+    }
+  }, [connectedDevices]);
+
   return (
     <div className="system-wiring-page">
       <div className="system-layout">
@@ -1252,14 +1730,15 @@ export const SystemWiring = () => {
             fitView
             attributionPosition="bottom-left"
           >
-            <Background color="#2a2a3a" gap={16} />
+            {/* No background grid - clean AutoCAD style */}
             <Controls />
             <MiniMap
-              nodeColor={() => '#1a1a2e'}
-              nodeStrokeColor={() => '#00a896'}
+              nodeColor={() => 'var(--bg-secondary)'}
+              nodeStrokeColor={() => 'var(--accent-color)'}
+              maskColor="rgba(0, 0, 0, 0.7)"
               style={{
-                backgroundColor: 'rgba(10, 10, 10, 0.8)',
-                borderColor: '#00a896',
+                backgroundColor: 'var(--bg-primary)',
+                border: '1px solid var(--border-secondary)',
               }}
             />
 
@@ -1341,6 +1820,26 @@ export const SystemWiring = () => {
                 onMouseLeave={(e) => e.target.style.background = '#7c4dff'}
               >
                 🖼️ Export Image
+              </button>
+              <button
+                onClick={handleExportPDF}
+                className="action-btn export-pdf-btn"
+                title="Export PDF Report (BOM + Connections + Diagram)"
+                style={{
+                  padding: '8px 12px',
+                  background: '#ff5722',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  transition: 'background 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.target.style.background = '#ff784e'}
+                onMouseLeave={(e) => e.target.style.background = '#ff5722'}
+              >
+                📄 Export PDF
               </button>
             </div>
           </ReactFlow>
