@@ -71,17 +71,47 @@ export const ColoredWireEdge = ({
   // Detect if this is a power input edge (battery -> neo)
   const isPowerInput = source && target && source.startsWith('device-') && target.startsWith('neo-');
 
-  // Calculate label position - centered on the wire
+  // Check current theme
+  const isLightTheme = document.body.getAttribute('data-theme') === 'light';
+  
+  // Check if wire color is white (for light theme outline)
+  const isWhiteWire = color.toLowerCase() === '#ffffff' || color.toLowerCase() === 'white' || color === '#fff';
+
+  // Calculate label position - shifted left by 25px
   let labelX, labelY;
   if (isPowerInput) {
-    const xOffset = sourcePosition === 'left' ? -40 : 10;
+    const xOffset = sourcePosition === 'left' ? -65 : -15; // -25px from original
     labelX = sourceX + xOffset;
     labelY = sourceY - 15;
   } else {
-    const xOffset = targetPosition === 'right' ? 25 : -40;
+    const xOffset = targetPosition === 'right' ? 0 : -65; // -25px from original
     labelX = targetX + xOffset;
     labelY = targetY - 15;
   }
+
+  // Determine wire label styles based on theme and wire color
+  const getWireLabelStyles = () => {
+    const baseStyles = {
+      backgroundColor: 'var(--bg-primary)',
+      color: 'var(--text-primary)',
+      padding: '2px 6px',
+      fontSize: '10px',
+      fontFamily: 'Consolas, Monaco, monospace',
+      fontWeight: '600',
+      border: `1.5px solid ${color}`,
+      borderLeft: `4px solid ${color}`,
+      whiteSpace: 'nowrap',
+      lineHeight: '1.2',
+    };
+
+    // If light theme and white wire, add black outline
+    if (isLightTheme && isWhiteWire) {
+      baseStyles.border = '1.5px solid #000000';
+      baseStyles.borderLeft = '4px solid #000000';
+    }
+
+    return baseStyles;
+  };
 
   return (
     <>
@@ -145,17 +175,16 @@ export const ColoredWireEdge = ({
               alignItems: 'center',
               gap: '0',
             }}>
-              {/* Wire number (left) - yellow text like AutoCAD */}
+              {/* Wire number (left) - always black background with yellow text */}
               {wireNumber && (
                 <span style={{
-                  backgroundColor: 'var(--bg-primary)',
+                  backgroundColor: '#000000',
                   color: 'var(--accent-secondary)',
                   padding: '2px 5px',
                   fontSize: '10px',
                   fontFamily: 'Consolas, Monaco, monospace',
                   fontWeight: 'bold',
-                  border: '1px solid var(--border-secondary)',
-                  borderRight: 'none',
+                  border: '1px solid #333333',
                   whiteSpace: 'nowrap',
                   lineHeight: '1.2',
                   height: '100%',
@@ -166,19 +195,15 @@ export const ColoredWireEdge = ({
                 </span>
               )}
               
+              {/* Gap spacer */}
+              {wireNumber && (
+                <span style={{
+                  width: '8px',
+                }} />
+              )}
+              
               {/* Wire label */}
-              <span style={{
-                backgroundColor: 'var(--bg-primary)',
-                color: 'var(--text-primary)',
-                padding: '2px 6px',
-                fontSize: '10px',
-                fontFamily: 'Consolas, Monaco, monospace',
-                fontWeight: '600',
-                border: `1.5px solid ${color}`,
-                borderLeft: wireNumber ? `1px solid var(--border-secondary)` : `4px solid ${color}`,
-                whiteSpace: 'nowrap',
-                lineHeight: '1.2',
-              }}>
+              <span style={getWireLabelStyles()}>
                 {label}
               </span>
             </div>

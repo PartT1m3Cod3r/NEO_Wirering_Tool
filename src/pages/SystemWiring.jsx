@@ -767,26 +767,43 @@ export const SystemWiring = () => {
 
   // Check for pin conflicts
   // Pins are tracked per plug type, except power pins (3, 4) which are shared
+  // Communication buses (RS485, SDI-12, Wiegand) allow multiple devices on same pins
   const checkConflicts = useCallback((devices) => {
     const signalPinUsage = {}; // Track by plugType -> pin -> device
     const powerPinUsage = {};  // Track power pins globally (shared bus)
     const conflicts = [];
 
+    // Device types that support multi-drop (bus) configurations
+    const busTypes = ['rs485', 'sdi12', 'wiegand'];
+
     devices.forEach(device => {
       const usedPins = getUsedPins(device);
+      const isBusType = busTypes.includes(device.type);
 
       // Check signal pins - these are per plug type
       usedPins.signalPins.forEach(pin => {
         const key = `${device.plugType}-${pin}`;
-        if (signalPinUsage[key]) {
-          conflicts.push({
-            pin,
-            plugType: device.plugType,
-            type: 'signal',
-            devices: [signalPinUsage[key].id, device.id],
-          });
+        
+        if (isBusType) {
+          // For bus types (RS485, SDI-12, Wiegand), allow multiple devices
+          // Just track them but don't flag as conflict
+          if (!signalPinUsage[key]) {
+            signalPinUsage[key] = [];
+          }
+          signalPinUsage[key].push(device);
+          // No conflict for bus types - they share the same pins by design
         } else {
-          signalPinUsage[key] = device;
+          // For non-bus types, check for actual conflicts
+          if (signalPinUsage[key] && !Array.isArray(signalPinUsage[key])) {
+            conflicts.push({
+              pin,
+              plugType: device.plugType,
+              type: 'signal',
+              devices: [signalPinUsage[key].id, device.id],
+            });
+          } else {
+            signalPinUsage[key] = device;
+          }
         }
       });
 
@@ -815,6 +832,10 @@ export const SystemWiring = () => {
 
   // Add a new device
   const addDevice = useCallback((deviceTemplate) => {
+    // Bus types can share pins (multi-drop communication)
+    const busTypes = ['rs485', 'sdi12', 'wiegand'];
+    const isBusType = busTypes.includes(deviceTemplate.type);
+
     // Get all available options
     const availableOptions = deviceTemplate.channels || deviceTemplate.outputs || deviceTemplate.inputs || [];
 
@@ -823,51 +844,66 @@ export const SystemWiring = () => {
     let newDevice = null;
     let conflicts = [];
 
-    for (const option of availableOptions) {
-      // Create a test device with this option
-      const testDevice = {
-        id: `device-${Date.now()}`,
-        ...deviceTemplate,
-        channel: deviceTemplate.channels ? option : null,
-        output: deviceTemplate.outputs ? option : null,
-        input: deviceTemplate.inputs ? option : null,
-        powerSource: deviceTemplate.powerSource ? deviceTemplate.powerSource[0] : null,
-        label: deviceTemplate.label,
-        wireMode: deviceTemplate.channels ? '3-wire' : undefined,
-      };
-
-      // Check for conflicts with this configuration
-      const tempDevices = [...connectedDevices, testDevice];
-      conflicts = checkConflicts(tempDevices);
-
-      if (conflicts.length === 0) {
-        // No conflict - use this option
-        selectedOption = option;
-        newDevice = testDevice;
-        break;
-      }
-    }
-
-    // If all options have conflicts, use the first available and warn
-    if (!newDevice) {
-      const firstOption = findNextAvailable(deviceTemplate, connectedDevices);
+    // For bus types, skip conflict checking - they share pins by design
+    if (isBusType) {
       newDevice = {
         id: `device-${Date.now()}`,
         ...deviceTemplate,
-        channel: deviceTemplate.channels ? firstOption : null,
-        output: deviceTemplate.outputs ? firstOption : null,
-        input: deviceTemplate.inputs ? firstOption : null,
+        channel: deviceTemplate.channels ? (deviceTemplate.channels[0] || null) : null,
+        output: deviceTemplate.outputs ? (deviceTemplate.outputs[0] || null) : null,
+        input: deviceTemplate.inputs ? (deviceTemplate.inputs[0] || null) : null,
         powerSource: deviceTemplate.powerSource ? deviceTemplate.powerSource[0] : null,
         label: deviceTemplate.label,
         wireMode: deviceTemplate.channels ? '3-wire' : undefined,
       };
+    } else {
+      // Non-bus types need conflict checking
+      for (const option of availableOptions) {
+        // Create a test device with this option
+        const testDevice = {
+          id: `device-${Date.now()}`,
+          ...deviceTemplate,
+          channel: deviceTemplate.channels ? option : null,
+          output: deviceTemplate.outputs ? option : null,
+          input: deviceTemplate.inputs ? option : null,
+          powerSource: deviceTemplate.powerSource ? deviceTemplate.powerSource[0] : null,
+          label: deviceTemplate.label,
+          wireMode: deviceTemplate.channels ? '3-wire' : undefined,
+        };
 
-      const tempDevices = [...connectedDevices, newDevice];
-      conflicts = checkConflicts(tempDevices);
+        // Check for conflicts with this configuration
+        const tempDevices = [...connectedDevices, testDevice];
+        conflicts = checkConflicts(tempDevices);
 
-      if (conflicts.length > 0) {
-        const conflictPins = conflicts.map(c => `${c.plugType} Pin ${c.pin}`).join(', ');
-        alert(`Warning: All pins are in use! Conflict detected on: ${conflictPins}`);
+        if (conflicts.length === 0) {
+          // No conflict - use this option
+          selectedOption = option;
+          newDevice = testDevice;
+          break;
+        }
+      }
+
+      // If all options have conflicts, use the first available and warn
+      if (!newDevice) {
+        const firstOption = findNextAvailable(deviceTemplate, connectedDevices);
+        newDevice = {
+          id: `device-${Date.now()}`,
+          ...deviceTemplate,
+          channel: deviceTemplate.channels ? firstOption : null,
+          output: deviceTemplate.outputs ? firstOption : null,
+          input: deviceTemplate.inputs ? firstOption : null,
+          powerSource: deviceTemplate.powerSource ? deviceTemplate.powerSource[0] : null,
+          label: deviceTemplate.label,
+          wireMode: deviceTemplate.channels ? '3-wire' : undefined,
+        };
+
+        const tempDevices = [...connectedDevices, newDevice];
+        conflicts = checkConflicts(tempDevices);
+
+        if (conflicts.length > 0) {
+          const conflictPins = conflicts.map(c => `${c.plugType} Pin ${c.pin}`).join(', ');
+          alert(`Warning: All pins are in use! Conflict detected on: ${conflictPins}`);
+        }
       }
     }
 
@@ -1445,31 +1481,31 @@ export const SystemWiring = () => {
         element.style.display = originalDisplay || '';
       });
 
-      // Create PDF
-      const doc = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
+      // Create PDF in LANDSCAPE orientation
+      const doc = new jsPDF('l', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth(); // 297mm in landscape
+      const pageHeight = doc.internal.pageSize.getHeight(); // 210mm in landscape
       const margin = 15;
       const timestamp = new Date().toISOString().slice(0, 10);
 
       // Header
       doc.setFillColor(0, 0, 0);
-      doc.rect(0, 0, pageWidth, 25, 'F');
+      doc.rect(0, 0, pageWidth, 20, 'F');
       doc.setTextColor(0, 255, 255);
       doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
-      doc.text('NEO WIRING SYSTEM REPORT', margin, 12);
+      doc.text('NEO WIRING SYSTEM REPORT', margin, 10);
       doc.setFontSize(10);
-      doc.text(`Generated: ${timestamp}`, margin, 18);
+      doc.text(`Generated: ${timestamp}`, margin, 16);
 
-      let yPos = 35;
+      let yPos = 28;
 
       // Bill of Materials Section
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.text('1. BILL OF MATERIALS', margin, yPos);
-      yPos += 8;
+      yPos += 6;
 
       // BOM Table
       const bomData = connectedDevices.map((device, idx) => [
@@ -1489,27 +1525,27 @@ export const SystemWiring = () => {
         headStyles: { fillColor: [0, 168, 150], textColor: [0, 0, 0], fontStyle: 'bold' },
         styles: { fontSize: 9, cellPadding: 2 },
         columnStyles: {
-          0: { cellWidth: 10 },
-          1: { cellWidth: 50 },
-          2: { cellWidth: 35 },
-          3: { cellWidth: 30 },
-          4: { cellWidth: 25 },
-          5: { cellWidth: 25 }
+          0: { cellWidth: 15 },
+          1: { cellWidth: 60 },
+          2: { cellWidth: 45 },
+          3: { cellWidth: 40 },
+          4: { cellWidth: 35 },
+          5: { cellWidth: 35 }
         }
       });
 
-      yPos = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 15 : yPos + 40;
+      yPos = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 10 : yPos + 30;
 
-      // Connections Section
-      if (yPos > 200) {
-        doc.addPage();
-        yPos = 20;
+      // Connections Section - add new page if needed
+      if (yPos > 140) {
+        doc.addPage('a4', 'landscape');
+        yPos = 15;
       }
 
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.text('2. CONNECTION SCHEDULE', margin, yPos);
-      yPos += 8;
+      yPos += 6;
 
       // Connection data
       const connectionData = [];
@@ -1608,11 +1644,11 @@ export const SystemWiring = () => {
         headStyles: { fillColor: [0, 168, 150], textColor: [0, 0, 0], fontStyle: 'bold' },
         styles: { fontSize: 8, cellPadding: 2 },
         columnStyles: {
-          0: { cellWidth: 45 },
-          1: { cellWidth: 25 },
-          2: { cellWidth: 15 },
-          3: { cellWidth: 25 },
-          4: { cellWidth: 20 }
+          0: { cellWidth: 60 },
+          1: { cellWidth: 35 },
+          2: { cellWidth: 20 },
+          3: { cellWidth: 35 },
+          4: { cellWidth: 25 }
         }
       });
 
@@ -1641,24 +1677,28 @@ export const SystemWiring = () => {
 
       const pngDataUrl = await svgToPng(svgDataUrl);
 
-      // Add diagram on a LANDSCAPE page for better fit
+      // Add diagram on a LANDSCAPE page - MAXIMIZE diagram size
       doc.addPage('a4', 'landscape');
       const landscapeWidth = doc.internal.pageSize.getWidth(); // 297mm
       const landscapeHeight = doc.internal.pageSize.getHeight(); // 210mm
       
-      doc.setFontSize(16);
+      // Minimal header
+      doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.text('3. WIRING DIAGRAM', margin, 12);
+      doc.text('3. WIRING DIAGRAM', margin, 10);
 
-      // Calculate image dimensions to fit landscape page
+      // Calculate image dimensions to MAXIMIZE on page
+      const headerSpace = 12; // Space for header
+      const footerSpace = 8;  // Space for footer
       const availableWidth = landscapeWidth - (margin * 2);
-      const availableHeight = landscapeHeight - 20; // Leave room for header
+      const availableHeight = landscapeHeight - headerSpace - footerSpace;
       
       const imgAspectRatio = captureWidth / captureHeight;
       const pageAspectRatio = availableWidth / availableHeight;
       
       let finalWidth, finalHeight;
       
+      // Maximize the image to fill the page
       if (imgAspectRatio > pageAspectRatio) {
         // Image is wider than page - fit to width
         finalWidth = availableWidth;
@@ -1669,21 +1709,23 @@ export const SystemWiring = () => {
         finalWidth = finalHeight * imgAspectRatio;
       }
       
-      // Ensure minimum size
-      finalWidth = Math.max(finalWidth, 150);
-      finalHeight = Math.max(finalHeight, 100);
+      // Scale to 110% as requested
+      finalWidth = finalWidth * 1.1;
+      finalHeight = finalHeight * 1.1;
       
-      // Position image aligned to left margin (not centered) to show all nodes
-      // This prevents right-side sensors from being cut off
-      const xOffset = margin;
-      const yOffset = 18;
-      
-      // Scale down if too wide to fit
+      // If scaled image is too big, fit to page
       if (finalWidth > availableWidth) {
-        const scale = availableWidth / finalWidth;
         finalWidth = availableWidth;
-        finalHeight = finalHeight * scale;
+        finalHeight = finalWidth / imgAspectRatio;
       }
+      if (finalHeight > availableHeight) {
+        finalHeight = availableHeight;
+        finalWidth = finalHeight * imgAspectRatio;
+      }
+      
+      // Center the image on the page
+      const xOffset = margin + (availableWidth - finalWidth) / 2;
+      const yOffset = headerSpace + (availableHeight - finalHeight) / 2;
 
       doc.addImage(pngDataUrl, 'PNG', xOffset, yOffset, finalWidth, finalHeight);
 

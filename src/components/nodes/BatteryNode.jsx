@@ -12,18 +12,18 @@ export const BatteryNode = ({ data }) => {
       </div>
 
       <div className="acad-node-body">
-        {/* IEC DC Power Source Symbol - larger for better spacing */}
+        {/* IEC DC Power Source Symbol - shifted right to prevent VCC cutoff */}
         <svg width="160" height="130" viewBox="0 0 160 130">
           {/* Device outline */}
           <rect 
-            x="35" y="20" width="90" height="90" 
+            x="45" y="20" width="90" height="90" 
             fill="var(--bg-primary)" 
             stroke="var(--text-primary)" 
             strokeWidth="1.5"
           />
 
-          {/* DC Source symbol - battery style lines */}
-          <g transform="translate(65, 40)">
+          {/* DC Source symbol - battery style lines - shifted right */}
+          <g transform="translate(75, 40)">
             {/* Long line (positive) */}
             <rect x="0" y="0" width="35" height="5" fill="var(--accent-color)"/>
             {/* Short line (negative) */}
@@ -38,36 +38,25 @@ export const BatteryNode = ({ data }) => {
             </text>
           </g>
 
-          {/* Terminal labels - with more spacing */}
-          <text x="20" y="50" fill="var(--text-secondary)" fontSize="10" textAnchor="end" fontFamily="Consolas,monospace">
+          {/* Terminal labels - shifted right to prevent cutoff */}
+          <text x="35" y="50" fill="var(--text-secondary)" fontSize="10" textAnchor="end" fontFamily="Consolas,monospace">
             VCC+
           </text>
-          <text x="20" y="95" fill="var(--text-secondary)" fontSize="10" textAnchor="end" fontFamily="Consolas,monospace">
+          <text x="35" y="95" fill="var(--text-secondary)" fontSize="10" textAnchor="end" fontFamily="Consolas,monospace">
             GND
           </text>
 
-          {/* Terminal circles */}
-          <circle cx="25" cy="52" r="5" fill="#FFFFFF" stroke="var(--border-color)" strokeWidth="1"/>
-          <circle cx="25" cy="92" r="5" fill="#8B4513" stroke="var(--border-color)" strokeWidth="1"/>
+          {/* Terminal circles - shifted right */}
+          <circle cx="40" cy="52" r="5" fill="#FFFFFF" stroke="var(--border-color)" strokeWidth="1"/>
+          <circle cx="40" cy="92" r="5" fill="#8B4513" stroke="var(--border-color)" strokeWidth="1"/>
 
-          {/* Connection lines from terminals to symbol */}
-          <line x1="30" y1="52" x2="55" y2="52" stroke="var(--border-secondary)" strokeWidth="1" strokeDasharray="3 2"/>
-          <line x1="30" y1="92" x2="55" y2="92" stroke="var(--border-secondary)" strokeWidth="1" strokeDasharray="3 2"/>
-          <line x1="55" y1="52" x2="65" y2="44" stroke="var(--border-secondary)" strokeWidth="1" strokeDasharray="3 2"/>
-          <line x1="55" y1="92" x2="65" y2="57" stroke="var(--border-secondary)" strokeWidth="1" strokeDasharray="3 2"/>
+          {/* Connection lines from terminals to symbol - adjusted */}
+          <line x1="45" y1="52" x2="65" y2="52" stroke="var(--border-secondary)" strokeWidth="1" strokeDasharray="3 2"/>
+          <line x1="45" y1="92" x2="65" y2="92" stroke="var(--border-secondary)" strokeWidth="1" strokeDasharray="3 2"/>
+          <line x1="65" y1="52" x2="75" y2="44" stroke="var(--border-secondary)" strokeWidth="1" strokeDasharray="3 2"/>
+          <line x1="65" y1="92" x2="75" y2="57" stroke="var(--border-secondary)" strokeWidth="1" strokeDasharray="3 2"/>
 
-          {/* Voltage label */}
-          <text x="80" y="112" fill="var(--accent-color)" fontSize="9" textAnchor="middle" fontFamily="Consolas,monospace">
-            12V DC
-          </text>
 
-          {/* Ground symbol at bottom right */}
-          <g transform="translate(125, 65)">
-            <line x1="0" y1="0" x2="0" y2="15" stroke="var(--text-primary)" strokeWidth="1.5"/>
-            <line x1="-10" y1="15" x2="10" y2="15" stroke="var(--text-primary)" strokeWidth="1.5"/>
-            <line x1="-6" y1="20" x2="6" y2="20" stroke="var(--text-primary)" strokeWidth="1"/>
-            <line x1="-2" y1="25" x2="2" y2="25" stroke="var(--text-primary)" strokeWidth="1"/>
-          </g>
         </svg>
 
         {/* Device label */}
@@ -90,7 +79,7 @@ export const BatteryNode = ({ data }) => {
         <span>SOLAR/PSU</span>
       </div>
 
-      {/* React Flow Handles - AutoCAD grip style with more spacing - Source handles on LEFT */}
+      {/* React Flow Handles - shifted right */}
       <Handle
         type="source"
         position={Position.Left}
