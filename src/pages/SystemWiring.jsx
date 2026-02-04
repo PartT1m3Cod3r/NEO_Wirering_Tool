@@ -1107,7 +1107,7 @@ export const SystemWiring = () => {
       });
 
       // Get current theme background color
-      const isDarkTheme = document.documentElement.getAttribute('data-theme') !== 'light';
+      const isDarkTheme = document.body.getAttribute('data-theme') !== 'light';
       const bgColor = isDarkTheme ? '#0a0a0f' : '#f5f5f7';
 
       // Get the viewport element that contains the actual diagram content
