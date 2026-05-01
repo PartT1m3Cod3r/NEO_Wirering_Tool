@@ -31,7 +31,6 @@ export const ReactFlowDiagram = ({ plugType, typeData, outputNumber, channelNumb
     const generateNodesAndEdges = () => {
       const newNodes = [];
       const newEdges = [];
-      let nodeId = 1;
       let edgeId = 1;
 
       // Add Neo device node(s)
@@ -170,7 +169,7 @@ export const ReactFlowDiagram = ({ plugType, typeData, outputNumber, channelNumb
             id: `e-${edgeId++}`,
             source: 'neo',
             target: 'device',
-            sourceHandle: 'output2',
+            sourceHandle: `pin-${output2.pin}`,
             targetHandle: 'a2',
             type: 'coloredWire',
             data: { label: `${output2.terminal} (Out ${outputNum === 1 ? '2' : '4'})`, color: colorMap[output2.color] },
@@ -184,7 +183,7 @@ export const ReactFlowDiagram = ({ plugType, typeData, outputNumber, channelNumb
             id: `e-${edgeId++}`,
             source: 'neo',
             target: 'device',
-            sourceHandle: 'output1',
+            sourceHandle: `pin-${output1.pin}`,
             targetHandle: 'a1',
             type: 'coloredWire',
             data: { label: `${output1.terminal} (Out ${outputNum})`, color: colorMap[output1.color] },
@@ -215,7 +214,7 @@ export const ReactFlowDiagram = ({ plugType, typeData, outputNumber, channelNumb
             id: `e-${edgeId++}`,
             source: 'neo',
             target: 'device',
-            sourceHandle: 'output',
+            sourceHandle: `pin-${output1.pin}`,
             targetHandle: 'a1',
             type: 'coloredWire',
             data: { label: `A${outputNum} (Out ${outputNum})`, color: colorMap[output1.color] },
@@ -226,52 +225,6 @@ export const ReactFlowDiagram = ({ plugType, typeData, outputNumber, channelNumb
           });
         }
 
-      } else if (typeData.value === 'power-input') {
-        // Power input - simple two-wire connection (arrows point INTO neo)
-        neoNode.data.outputs = []; // Neo is the target
-
-        deviceNode = {
-          id: 'device',
-          type: 'sensor',
-          position: { x: 700, y: 100 },
-          data: {
-            label: 'Power Supply',
-            sensorType: 'power-input',
-            terminals: [
-              { id: 'vcc+', name: 'VCC+', color: colorMap.white },
-              { id: 'gnd', name: 'GND', color: colorMap.brown }
-            ]
-          },
-        };
-
-        // Add power input edges (arrows point INTO neo device)
-        newEdges.push({
-          id: `e-${edgeId++}`,
-          source: 'device',
-          target: 'neo',
-          sourceHandle: 'vcc+',
-          targetHandle: 'vcc',
-          type: 'coloredWire',
-          data: { label: 'VCC+ (Pin 1)', color: colorMap.white },
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: colorMap.white,
-          },
-        });
-
-        newEdges.push({
-          id: `e-${edgeId++}`,
-          source: 'device',
-          target: 'neo',
-          sourceHandle: 'gnd',
-          targetHandle: 'gnd',
-          type: 'coloredWire',
-          data: { label: 'GND (Pin 2)', color: colorMap.brown },
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: colorMap.brown,
-          },
-        });
       } else if (plugType === 'inputs') {
         // For inputs, create sensor node with selected channel
         const channelNum = parseInt(channelNumber) || 1;
@@ -322,7 +275,7 @@ export const ReactFlowDiagram = ({ plugType, typeData, outputNumber, channelNumb
           id: `e-${edgeId++}`,
           source: 'neo',
           target: 'device',
-          sourceHandle: 'signal',
+          sourceHandle: `pin-${channel.pin}`,
           targetHandle: 'signal',
           type: 'coloredWire',
           data: { label: `Signal`, color: channel.color }, // Simplified label
@@ -554,7 +507,7 @@ export const ReactFlowDiagram = ({ plugType, typeData, outputNumber, channelNumb
             id: `e-${edgeId++}`,
             source: 'neo',
             target: 'device',
-            sourceHandle: 'signal',
+            sourceHandle: 'pin-6',
             targetHandle: 'signal',
             type: 'coloredWire',
             data: { label: 'Signal (DI1)', color: colorMap.pink },
@@ -630,6 +583,9 @@ export const ReactFlowDiagram = ({ plugType, typeData, outputNumber, channelNumb
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
+        fitViewOptions={{ padding: 0.15, minZoom: 0.3, maxZoom: 1.5 }}
+        minZoom={0.2}
+        maxZoom={2}
         attributionPosition="bottom-left"
       >
         <Background color="#2a2a3a" gap={16} />

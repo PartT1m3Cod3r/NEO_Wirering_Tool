@@ -1,142 +1,175 @@
 import { Handle, Position } from 'reactflow';
 
 export const LatchingRelayNode = ({ data }) => {
-  const { label, terminals } = data;
+  const { label } = data;
+
+  // Latching relay reference designator
+  const refDes = 'KR';
+  const description = 'Latching Relay';
+
+  // 2 wire latching relay — SET and RESET
+  const terminals = [
+    { id: 'set', name: 'SET', color: '#8B4513' },
+    { id: 'reset', name: 'RST', color: '#0000FF' },
+  ];
+
+  const defaultSide = data.handleSide || 'bottom';
+  const terminalSides = data.terminalSides || {};
+
+  // Group terminals by their actual side
+  const bySide = { top: [], bottom: [], left: [], right: [] };
+  terminals.forEach(t => {
+    const side = terminalSides[t.id] || defaultSide;
+    bySide[side].push(t);
+  });
+
+  const getTerminalLayout = (terminal) => {
+    const side = terminalSides[terminal.id] || defaultSide;
+    const group = bySide[side];
+    const idx = group.findIndex(t => t.id === terminal.id);
+    const isHorizontal = side === 'top' || side === 'bottom';
+    let pos;
+    if (isHorizontal) {
+      if (group.length === 1) pos = 80;
+      else if (group.length === 2) pos = 40 + idx * 80;
+      else pos = 40 + idx * 32;
+    } else {
+      if (group.length === 1) pos = 74;
+      else if (group.length === 2) pos = 44 + idx * 60;
+      else pos = 30 + idx * 32;
+    }
+    const handlePosition = side === 'top' ? Position.Top : side === 'bottom' ? Position.Bottom : side === 'left' ? Position.Left : Position.Right;
+    return { side, pos, isHorizontal, handlePosition };
+  };
 
   return (
-    <div className="acad-node latching-relay-acad">
-      {/* Node header with reference designator */}
+    <div className="acad-node latching-relay-node-acad" style={{ width: '160px', position: 'relative' }}>
+      {/* Terminal pins — outside the card */}
+      {terminals.map((terminal) => {
+        const { side, pos, isHorizontal, handlePosition } = getTerminalLayout(terminal);
+        return (
+          <div key={`pin-${terminal.id}`}>
+            <div style={{
+              position: 'absolute',
+              ...(isHorizontal
+                ? { left: `${pos - 5}px`, [side]: '-14px' }
+                : { [side]: '-14px', top: `${pos - 5}px` }
+              ),
+              width: '10px',
+              height: '10px',
+              borderRadius: '50%',
+              backgroundColor: terminal.color,
+              border: '1px solid var(--border-color)'
+            }} />
+            <Handle
+              type="target"
+              position={handlePosition}
+              id={terminal.id}
+              style={{
+                position: 'absolute',
+                ...(isHorizontal
+                  ? { [side]: -14, left: pos }
+                  : { [side]: -14, top: pos }
+                ),
+                opacity: 0,
+                width: '12px',
+                height: '12px',
+                zIndex: 10
+              }}
+            />
+          </div>
+        );
+      })}
+
+      {/* Header */}
       <div className="acad-node-header">
-        <span className="acad-ref-des">K1-L</span>
-        <span className="acad-device-type">LATCH</span>
+        <span className="acad-ref-des">{refDes}1</span>
+        <span className="acad-device-type">{description.toUpperCase()}</span>
       </div>
 
-      <div className="acad-node-body">
-        {/* IEC latching relay with dual coils - larger for better spacing */}
-        <svg width="180" height="150" viewBox="0 0 180 150">
-          {/* Device outline */}
-          <rect 
-            x="40" y="15" width="100" height="120" 
-            fill="var(--bg-primary)" 
-            stroke="var(--text-primary)" 
-            strokeWidth="1.5"
-          />
+      {/* Body */}
+      <div style={{
+        background: 'var(--bg-secondary)',
+        height: '100px',
+        position: 'relative',
+        display: 'flex'
+      }}>
+        {/* Terminal labels */}
+        {terminals.map((terminal, idx) => {
+          const leftPos = [40, 120][idx];
+          return (
+            <div key={`label-${idx}`} style={{
+              position: 'absolute',
+              left: `${leftPos - 12}px`,
+              top: '4px',
+              fontSize: '8px',
+              color: 'var(--text-secondary)',
+              lineHeight: '10px',
+              fontFamily: "'Consolas', 'Monaco', monospace",
+              textAlign: 'center',
+              width: '24px'
+            }}>
+              {terminal.name}
+            </div>
+          );
+        })}
 
-          {/* SET Coil (top) - rectangle with + symbol */}
-          <rect 
-            x="70" y="30" width="35" height="30" 
-            fill="none" 
-            stroke="var(--accent-color)" 
-            strokeWidth="2"
-          />
-          <text x="87" y="50" fill="var(--accent-color)" fontSize="10" textAnchor="middle" fontFamily="Consolas,monospace">
-            SET
-          </text>
-          {/* Plus symbol for set */}
-          <line x1="77" y1="45" x2="97" y2="45" stroke="var(--accent-color)" strokeWidth="1.5"/>
-          <line x1="87" y1="35" x2="87" y2="55" stroke="var(--accent-color)" strokeWidth="1.5"/>
-
-          {/* RESET Coil (bottom) - rectangle with - symbol */}
-          <rect 
-            x="70" y="75" width="35" height="30" 
-            fill="none" 
-            stroke="var(--accent-color)" 
-            strokeWidth="2"
-          />
-          <text x="87" y="95" fill="var(--accent-color)" fontSize="10" textAnchor="middle" fontFamily="Consolas,monospace">
-            RST
-          </text>
-          {/* Minus symbol for reset */}
-          <line x1="77" y1="90" x2="97" y2="90" stroke="var(--accent-color)" strokeWidth="1.5"/>
-
-          {/* Latching indicator arrow between coils */}
-          <g transform="translate(115, 55)">
-            <polygon points="0,0 8,4 0,8" fill="var(--accent-secondary)"/>
-            <line x1="-5" y1="4" x2="0" y2="4" stroke="var(--accent-secondary)" strokeWidth="2"/>
-          </g>
-          <text x="132" y="60" fill="var(--accent-secondary)" fontSize="8" fontFamily="Consolas,monospace">
-            LAT
-          </text>
-
-          {/* Terminal labels and connection points - with more spacing */}
-          {terminals && terminals.map((terminal, idx) => {
-            const yPos = idx === 0 ? 45 : 90; // A2 on top, A1 on bottom
-            const labelText = terminal.name;
-            return (
-              <g key={idx}>
-                {/* Terminal circle */}
-                <circle cx="22" cy={yPos} r="5" fill={terminal.color} stroke="var(--border-color)" strokeWidth="1"/>
-                {/* Terminal label */}
-                <text x="12" y={yPos + 3} fill="var(--text-secondary)" fontSize="10" textAnchor="end" fontFamily="Consolas,monospace">
-                  {labelText}
-                </text>
-                {/* Connection line */}
-                <line x1="27" y1={yPos} x2="40" y2={yPos} stroke="var(--border-secondary)" strokeWidth="1.5"/>
-                {/* Internal connection to coil */}
-                <line x1="40" y1={yPos} x2="70" y2={yPos} stroke="var(--border-secondary)" strokeWidth="1" strokeDasharray="3 2"/>
-              </g>
-            );
-          })}
-
-          {/* Output indicator on right */}
-          <g transform="translate(145, 50)">
-            {/* Dual contact symbol */}
-            <text x="5" y="0" fill="var(--text-muted)" fontSize="8" textAnchor="middle" fontFamily="Consolas,monospace">
-              NO
-            </text>
-            <line x1="0" y1="12" x2="12" y2="12" stroke="var(--border-secondary)" strokeWidth="1"/>
-            <line x1="0" y1="42" x2="12" y2="42" stroke="var(--border-secondary)" strokeWidth="1"/>
-            <line x1="12" y1="12" x2="22" y2="2" stroke="var(--text-primary)" strokeWidth="1.5"/>
-          </g>
-
-          {/* Latching relay label */}
-          <text x="90" y="142" fill="var(--text-muted)" fontSize="8" textAnchor="middle" fontFamily="Consolas,monospace">
-            LATCHING RELAY
-          </text>
-        </svg>
+        {/* Center symbol rectangle */}
+        <div style={{
+          position: 'absolute',
+          left: '8px',
+          right: '8px',
+          top: '20px',
+          bottom: '6px',
+          border: '1px solid var(--border-secondary)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column'
+        }}>
+          {/* IEC Latching Relay Symbol */}
+          <svg width="48" height="56" viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Box */}
+            <rect x="8" y="4" width="32" height="48" stroke="var(--text-primary)" strokeWidth="2" fill="none"/>
+            {/* Vertical divider */}
+            <line x1="24" y1="4" x2="24" y2="52" stroke="var(--text-primary)" strokeWidth="2"/>
+            {/* Left diagonal (SET) */}
+            <line x1="8" y1="4" x2="24" y2="28" stroke="var(--text-primary)" strokeWidth="2"/>
+            {/* Right diagonal (RESET) */}
+            <line x1="24" y1="28" x2="40" y2="52" stroke="var(--text-primary)" strokeWidth="2"/>
+            {/* SET label */}
+            <text x="16" y="18" textAnchor="middle" fill="var(--text-primary)" fontSize="8" fontFamily="monospace" fontWeight="bold">S</text>
+            {/* RESET label */}
+            <text x="32" y="48" textAnchor="middle" fill="var(--text-primary)" fontSize="8" fontFamily="monospace" fontWeight="bold">R</text>
+          </svg>
+        </div>
 
         {/* Device label */}
-        <div className="acad-node-title" style={{ fontSize: '10px', marginTop: '2px' }}>
+        <div style={{
+          position: 'absolute',
+          left: '8px',
+          right: '8px',
+          bottom: '2px',
+          fontSize: '9px',
+          color: 'var(--text-primary)',
+          textAlign: 'center',
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+          fontWeight: 600,
+          fontFamily: "'Consolas', 'Monaco', monospace",
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis'
+        }}>
           {label}
         </div>
       </div>
 
-      {/* Terminal strip footer */}
-      <div style={{ 
-        borderTop: '1px solid var(--border-secondary)', 
-        padding: '4px 8px',
-        fontSize: '9px',
-        fontFamily: 'Consolas,monospace',
-        color: 'var(--text-muted)',
-        display: 'flex',
-        justifyContent: 'space-between'
-      }}>
-        <span>TB-K1L</span>
-        <span>2COIL</span>
+      {/* Footer */}
+      <div className="acad-node-footer">
+        <span>TB{refDes}1</span>
+        <span>{terminals.length}P</span>
       </div>
-
-      {/* React Flow Handles - AutoCAD grip style with more spacing */}
-      {terminals && terminals.map((terminal, idx) => {
-        const topPos = 48 + (idx * 45);
-        const handleId = idx === 0 ? 'a2' : 'a1';
-
-        return (
-          <Handle
-            key={idx}
-            type="target"
-            position={Position.Left}
-            id={handleId}
-            style={{
-              left: -6,
-              top: topPos,
-              backgroundColor: terminal.color,
-              border: '2px solid var(--accent-color)',
-              width: '12px',
-              height: '12px'
-            }}
-          />
-        );
-      })}
     </div>
   );
 };

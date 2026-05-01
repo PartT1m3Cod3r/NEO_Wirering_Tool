@@ -1,167 +1,195 @@
 import { Handle, Position } from 'reactflow';
+import { colorMap } from '../../data/plugData';
+
+// Pin definitions for each plug type (M12 standard)
+const pinDefinitions = {
+  inputs: [
+    { pin: 1, color: 'white', colorHex: colorMap.white, function: 'Solar Input (5 to 24V)', textColor: '#000' },
+    { pin: 2, color: 'brown', colorHex: colorMap.brown, function: 'Ground', textColor: '#FFF' },
+    { pin: 3, color: 'green', colorHex: colorMap.green, function: 'Sensor Power Out', textColor: '#000' },
+    { pin: 4, color: 'yellow', colorHex: colorMap.yellow, function: 'Ground', textColor: '#000' },
+    { pin: 5, color: 'grey', colorHex: colorMap.grey, function: 'Analog Input 4', textColor: '#FFF' },
+    { pin: 6, color: 'pink', colorHex: colorMap.pink, function: 'Analog Input 3', textColor: '#000' },
+    { pin: 7, color: 'blue', colorHex: colorMap.blue, function: 'Analog Input 2', textColor: '#FFF' },
+    { pin: 8, color: 'red', colorHex: colorMap.red, function: 'Analog Input 1', textColor: '#FFF' },
+  ],
+  outputs: [
+    { pin: 1, color: 'white', colorHex: colorMap.white, function: 'Solar Input (5 to 24V)', textColor: '#000' },
+    { pin: 2, color: 'brown', colorHex: colorMap.brown, function: 'Ground', textColor: '#FFF' },
+    { pin: 3, color: 'green', colorHex: colorMap.green, function: 'Actuator Power Out', textColor: '#000' },
+    { pin: 4, color: 'yellow', colorHex: colorMap.yellow, function: 'Ground', textColor: '#000' },
+    { pin: 5, color: 'grey', colorHex: colorMap.grey, function: 'Actuator Output 1', textColor: '#FFF' },
+    { pin: 6, color: 'pink', colorHex: colorMap.pink, function: 'Actuator Output 2', textColor: '#000' },
+    { pin: 7, color: 'blue', colorHex: colorMap.blue, function: 'Actuator Output 3', textColor: '#FFF' },
+    { pin: 8, color: 'red', colorHex: colorMap.red, function: 'Actuator Output 4', textColor: '#FFF' },
+  ],
+  communications: [
+    { pin: 1, color: 'white', colorHex: colorMap.white, function: 'Solar Input (5 to 24V)', textColor: '#000' },
+    { pin: 2, color: 'brown', colorHex: colorMap.brown, function: 'Ground', textColor: '#FFF' },
+    { pin: 3, color: 'green', colorHex: colorMap.green, function: 'RS485 B', textColor: '#000' },
+    { pin: 4, color: 'yellow', colorHex: colorMap.yellow, function: 'RS485 A', textColor: '#000' },
+    { pin: 5, color: 'grey', colorHex: colorMap.grey, function: 'Digital Input 2 / Wiegand D1', textColor: '#FFF' },
+    { pin: 6, color: 'pink', colorHex: colorMap.pink, function: 'Digital Input 1 / Wiegand D0', textColor: '#000' },
+    { pin: 7, color: 'blue', colorHex: colorMap.blue, function: 'SDI-12 Data', textColor: '#FFF' },
+    { pin: 8, color: 'red', colorHex: colorMap.red, function: 'Ground', textColor: '#FFF' },
+  ],
+};
+
+// Source handle IDs per pin for each plug type
+// React Flow matches edges to handles by ID. Multiple IDs at same position are fine.
+const pinSourceHandles = {
+  inputs: {
+    3: [{ id: 'power', color: colorMap.green }],
+    4: [{ id: 'gnd', color: colorMap.yellow }],
+    5: [{ id: 'pin-5', color: colorMap.grey }],
+    6: [{ id: 'pin-6', color: colorMap.pink }],
+    7: [{ id: 'pin-7', color: colorMap.blue }],
+    8: [{ id: 'pin-8', color: colorMap.red }],
+  },
+  outputs: {
+    4: [{ id: 'gnd', color: colorMap.yellow }],
+    5: [{ id: 'pin-5', color: colorMap.grey }],
+    6: [{ id: 'pin-6', color: colorMap.pink }],
+    7: [{ id: 'pin-7', color: colorMap.blue }],
+    8: [{ id: 'pin-8', color: colorMap.red }],
+  },
+  communications: {
+    3: [{ id: 'b', color: colorMap.green }],
+    4: [{ id: 'a', color: colorMap.yellow }],
+    5: [{ id: 'pin-5', color: colorMap.grey }, { id: 'd1', color: colorMap.grey }],
+    6: [{ id: 'pin-6', color: colorMap.pink }, { id: 'd0', color: colorMap.pink }],
+    7: [{ id: 'pin-7', color: colorMap.blue }, { id: 'data', color: colorMap.blue }],
+    8: [{ id: 'gnd', color: colorMap.red }],
+  },
+};
+
+// Target handles for pins 1 & 2 (power input connections INTO the Neo)
+const targetHandleMap = {
+  1: { id: 'vcc', color: colorMap.white },
+  2: { id: 'gnd', color: colorMap.brown },
+};
+
+const getRefDes = (label) => {
+  if (label?.includes('Inputs')) return 'J1';
+  if (label?.includes('Coms')) return 'J2';
+  if (label?.includes('Outputs')) return 'J3';
+  return 'J?';
+};
+
+const getPlugType = (label) => {
+  if (label?.includes('Inputs')) return 'inputs';
+  if (label?.includes('Coms')) return 'communications';
+  if (label?.includes('Outputs')) return 'outputs';
+  return 'inputs';
+};
 
 export const NeoDeviceNode = ({ data }) => {
-  const { label, outputs } = data;
-
-  // Generate reference designator based on label
-  const getRefDes = () => {
-    if (label?.includes('Inputs')) return 'J1';
-    if (label?.includes('Coms')) return 'J2';
-    if (label?.includes('Outputs')) return 'J3';
-    return 'J?';
-  };
+  const { label } = data;
+  const plugType = data.plugType || getPlugType(label);
+  const pins = pinDefinitions[plugType] || pinDefinitions.inputs;
+  const refDes = getRefDes(label);
 
   return (
-    <div className="acad-node neo-device-acad">
+    <div className="neo-terminal-block">
       {/* Node header with reference designator */}
-      <div className="acad-node-header">
-        <span className="acad-ref-des">{getRefDes()}</span>
-        <span className="acad-device-type">NEO</span>
+      <div className="neo-terminal-header">
+        <span className="neo-terminal-ref">{refDes}</span>
+        <span className="neo-terminal-type">NEO</span>
       </div>
 
-      <div className="acad-node-title" style={{ padding: '4px', fontSize: '10px' }}>
-        {label}
+      <div className="neo-terminal-title">
+        {label?.replace('Neo Device ', '')}
       </div>
 
-      {/* M12 Connector - Technical drawing style with more spacing */}
-      <div style={{ padding: '8px', display: 'flex', justifyContent: 'center', position: 'relative' }}>
-        <svg width="160" height="140" viewBox="0 0 160 140">
-          {/* Connector outline - hexagonal for M12 */}
-          <polygon 
-            points="80,15 120,38 120,88 80,110 40,88 40,38" 
-            fill="var(--bg-primary)" 
-            stroke="var(--accent-color)" 
-            strokeWidth="2"
-          />
-          
-          {/* Inner circle */}
-          <circle 
-            cx="80" 
-            cy="62" 
-            r="40" 
-            fill="none" 
-            stroke="var(--border-secondary)" 
-            strokeWidth="1" 
-            strokeDasharray="2 2"
-          />
+      {/* Terminal Block Table */}
+      <div className="neo-terminal-table">
+        {/* Table Header */}
+        <div className="neo-terminal-row neo-terminal-header-row">
+          <div className="neo-terminal-cell pin-col">PIN</div>
+          <div className="neo-terminal-cell desc-col">DESCRIPTION</div>
+          <div className="neo-terminal-cell color-col">COLOUR</div>
+        </div>
 
-          {/* Keyway indicator */}
-          <path 
-            d="M 75 17 L 80 21 L 85 17" 
-            stroke="var(--accent-color)" 
-            strokeWidth="2" 
-            fill="none"
-          />
+        {/* Table Rows - one per pin */}
+        {pins.map((pinDef) => {
+          const isPowerPin = pinDef.pin === 1 || pinDef.pin === 2;
+          const targetHandle = targetHandleMap[pinDef.pin];
+          const sourceHandles = pinSourceHandles[plugType]?.[pinDef.pin] || [];
 
-          {/* 8 Pins arranged in circle - with proper spacing for labels */}
-          
-          {/* Pin 1 - White (VCC+) - Top right */}
-          <circle cx="110" cy="35" r="6" fill="#FFFFFF" stroke="#000" strokeWidth="0.5"/>
-          <text x="110" y="36" dy="1" fontSize="7" textAnchor="middle" fill="#000" fontFamily="Consolas,monospace">1</text>
-          <text x="132" y="30" fontSize="8" fill="var(--text-secondary)" fontFamily="Consolas,monospace">WHT</text>
+          return (
+            <div
+              key={pinDef.pin}
+              className="neo-terminal-row"
+              style={{ position: 'relative' }}
+            >
+              <div className="neo-terminal-cell pin-col">
+                {pinDef.pin}
+              </div>
+              <div className="neo-terminal-cell desc-col">
+                {pinDef.function}
+              </div>
+              <div
+                className="neo-terminal-cell color-col"
+                style={{
+                  backgroundColor: pinDef.colorHex,
+                  color: pinDef.textColor,
+                  fontWeight: 'bold',
+                }}
+              >
+                {pinDef.color.toUpperCase()}
+              </div>
 
-          {/* Pin 2 - Brown (GND) - Right */}
-          <circle cx="125" cy="62" r="6" fill="#8B4513" stroke="#000" strokeWidth="0.5"/>
-          <text x="125" y="63" dy="1" fontSize="7" textAnchor="middle" fill="#FFF" fontFamily="Consolas,monospace">2</text>
-          <text x="138" y="66" fontSize="8" fill="var(--text-secondary)" fontFamily="Consolas,monospace">BRN</text>
+              {/* Target handle for power input (pins 1 & 2) */}
+              {isPowerPin && targetHandle && (
+                <Handle
+                  type="target"
+                  position={Position.Right}
+                  id={targetHandle.id}
+                  style={{
+                    position: 'absolute',
+                    right: -6,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    backgroundColor: targetHandle.color,
+                    border: '2px solid var(--accent-color)',
+                    width: '10px',
+                    height: '10px',
+                    zIndex: 10,
+                  }}
+                />
+              )}
 
-          {/* Pin 3 - Green (Vout+) - Bottom right */}
-          <circle cx="110" cy="89" r="6" fill="#00AA00" stroke="#000" strokeWidth="0.5"/>
-          <text x="110" y="90" dy="1" fontSize="7" textAnchor="middle" fill="#FFF" fontFamily="Consolas,monospace">3</text>
-          <text x="132" y="96" fontSize="8" fill="var(--text-secondary)" fontFamily="Consolas,monospace">GRN</text>
-
-          {/* Pin 4 - Yellow (GND) - Bottom */}
-          <circle cx="80" cy="100" r="6" fill="#CCCC00" stroke="#000" strokeWidth="0.5"/>
-          <text x="80" y="101" dy="1" fontSize="7" textAnchor="middle" fill="#000" fontFamily="Consolas,monospace">4</text>
-          <text x="80" y="118" fontSize="8" fill="var(--text-secondary)" fontFamily="Consolas,monospace">YEL</text>
-
-          {/* Pin 5 - Grey (Ch4/Out1) - Bottom left */}
-          <circle cx="50" cy="89" r="6" fill="#808080" stroke="#000" strokeWidth="0.5"/>
-          <text x="50" y="90" dy="1" fontSize="7" textAnchor="middle" fill="#FFF" fontFamily="Consolas,monospace">5</text>
-          <text x="28" y="96" fontSize="8" fill="var(--text-secondary)" fontFamily="Consolas,monospace">GRY</text>
-
-          {/* Pin 6 - Pink (Ch3/Out2) - Left */}
-          <circle cx="35" cy="62" r="6" fill="#FF69B4" stroke="#000" strokeWidth="0.5"/>
-          <text x="35" y="63" dy="1" fontSize="7" textAnchor="middle" fill="#000" fontFamily="Consolas,monospace">6</text>
-          <text x="8" y="66" fontSize="8" fill="var(--text-secondary)" fontFamily="Consolas,monospace">PNK</text>
-
-          {/* Pin 7 - Blue (Ch2/Out3) - Top left */}
-          <circle cx="50" cy="35" r="6" fill="#0000FF" stroke="#000" strokeWidth="0.5"/>
-          <text x="50" y="36" dy="1" fontSize="7" textAnchor="middle" fill="#FFF" fontFamily="Consolas,monospace">7</text>
-          <text x="28" y="30" fontSize="8" fill="var(--text-secondary)" fontFamily="Consolas,monospace">BLU</text>
-
-          {/* Pin 8 - Red (Ch1/Out4) - Center */}
-          <circle cx="80" cy="62" r="6" fill="#FF0000" stroke="#000" strokeWidth="0.5"/>
-          <text x="80" y="63" dy="1" fontSize="7" textAnchor="middle" fill="#FFF" fontFamily="Consolas,monospace">8</text>
-          <text x="80" y="80" fontSize="8" fill="var(--text-secondary)" fontFamily="Consolas,monospace">RED</text>
-
-          {/* Connector type label */}
-          <text x="80" y="135" fontSize="9" textAnchor="middle" fill="var(--accent-color)" fontFamily="Consolas,monospace">
-            M12-8
-          </text>
-        </svg>
-
-        {/* React Flow Handles - AutoCAD grip style */}
-        
-        {/* Target handles (inputs) - for power input connections on RIGHT side */}
-        <Handle
-          type="target"
-          position={Position.Right}
-          id="vcc"
-          style={{
-            top: 42,
-            right: -6,
-            backgroundColor: '#FFFFFF',
-            border: '2px solid var(--accent-color)',
-            width: '12px',
-            height: '12px'
-          }}
-        />
-        <Handle
-          type="target"
-          position={Position.Right}
-          id="gnd"
-          style={{
-            top: 72,
-            right: -6,
-            backgroundColor: '#8B4513',
-            border: '2px solid var(--accent-color)',
-            width: '12px',
-            height: '12px'
-          }}
-        />
-        
-        {/* Source handles (outputs) */}
-        {outputs && outputs.map((output, idx) => (
-          <Handle
-            key={idx}
-            type="source"
-            position={Position.Right}
-            id={output.id}
-            style={{
-              top: 32 + (idx * 22),
-              right: -6,
-              backgroundColor: output.color,
-              border: '2px solid var(--accent-color)',
-              width: '12px',
-              height: '12px'
-            }}
-          />
-        ))}
+              {/* Source handles for all other pins (3-8) */}
+              {sourceHandles.map((handle, idx) => (
+                <Handle
+                  key={`${pinDef.pin}-${handle.id}`}
+                  type="source"
+                  position={Position.Right}
+                  id={handle.id}
+                  style={{
+                    position: 'absolute',
+                    right: -6,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    backgroundColor: handle.color,
+                    border: '2px solid var(--accent-color)',
+                    width: '10px',
+                    height: '10px',
+                    zIndex: 10,
+                    // Slight offset for overlapping handles on same pin
+                    marginTop: sourceHandles.length > 1 ? (idx === 0 ? -3 : 3) : 0,
+                  }}
+                />
+              ))}
+            </div>
+          );
+        })}
       </div>
 
-      {/* Connection terminal strip */}
-      <div style={{ 
-        borderTop: '1px solid var(--border-secondary)', 
-        padding: '4px 8px',
-        fontSize: '9px',
-        fontFamily: 'Consolas,monospace',
-        color: 'var(--text-muted)',
-        display: 'flex',
-        justifyContent: 'space-between'
-      }}>
-        <span>TERM STRIP</span>
-        <span>{outputs?.length || 0} CONN</span>
+      {/* Terminal strip footer */}
+      <div className="neo-terminal-footer">
+        <span>TB-{refDes}</span>
+        <span>M12-8 A-CODED</span>
       </div>
     </div>
   );

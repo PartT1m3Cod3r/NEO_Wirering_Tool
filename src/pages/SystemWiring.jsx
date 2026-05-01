@@ -1,12 +1,10 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import ReactFlow, {
-  Background,
   Controls,
   MiniMap,
   useNodesState,
   useEdgesState,
-  MarkerType,
-  addEdge,
+  useReactFlow,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { jsPDF } from 'jspdf';
@@ -20,8 +18,26 @@ import { ColoredWireEdge } from '../components/edges/ColoredWireEdge';
 import { DevicePalette } from '../components/system/DevicePalette';
 import { DeviceConfigPanel } from '../components/system/DeviceConfigPanel';
 import { PinUsageSummary } from '../components/system/PinUsageSummary';
-import { colorMap, plugOptions } from '../data/plugData';
+import { colorMap } from '../data/plugData';
 import './SystemWiring.css';
+
+// Child component to fit view once on mount (must be inside <ReactFlow>)
+const FitViewOnMount = () => {
+  const { fitView } = useReactFlow();
+  const hasRun = useRef(false);
+
+  useEffect(() => {
+    if (hasRun.current) return;
+    hasRun.current = true;
+    // Small delay ensures nodes have rendered before fitting
+    const timer = setTimeout(() => {
+      fitView({ padding: 0.15 });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [fitView]);
+
+  return null;
+};
 
 const nodeTypes = {
   neoDevice: NeoDeviceNode,
@@ -66,17 +82,6 @@ const availableDevices = [
     ]
   },
 ];
-
-// Get pin configuration for a device
-const getDevicePins = (deviceType, plugType, channelOrOutput) => {
-  const plugData = plugOptions.find(p => p.value === plugType);
-  if (!plugData) return [];
-
-  const typeData = plugData.types.find(t => t.value === deviceType);
-  if (!typeData) return [];
-
-  return typeData.pins || [];
-};
 
 // Find next available channel/output/input for a device type
 const findNextAvailable = (deviceTemplate, connectedDevices) => {
@@ -202,14 +207,17 @@ const getDeviceTerminals = (device) => {
     } else {
       const channelColors = { 1: 'red', 2: 'blue', 3: 'pink', 4: 'grey' };
       const is2Wire = device.wireMode === '2-wire';
+      // Order: Power+ (top), GND (middle), Signal (bottom)
+      // This matches pin order 3, 4, 5-8 so wires run straight with minimal crossing
       terminals.push(
-        { id: 'signal', name: 'Signal', color: colorMap[channelColors[device.channel]] },
         { id: 'power+', name: 'Power+', color: colorMap.green }
       );
-      // Only add GND terminal for 3-wire mode
       if (!is2Wire) {
         terminals.push({ id: 'gnd', name: 'GND', color: colorMap.yellow });
       }
+      terminals.push(
+        { id: 'signal', name: 'Signal', color: colorMap[channelColors[device.channel]] }
+      );
     }
   } else if (device.plugType === 'outputs') {
     if (device.type === 'power-input') {
@@ -244,9 +252,10 @@ const getDeviceTerminals = (device) => {
         { id: 'a', name: 'A', color: colorMap.yellow }
       );
     } else if (device.type === 'wiegand') {
+      // Order: D1 (top), D0 (bottom) to match pin order 5, 6
       terminals.push(
-        { id: 'd0', name: 'D0', color: colorMap.pink },
-        { id: 'd1', name: 'D1', color: colorMap.grey }
+        { id: 'd1', name: 'D1', color: colorMap.grey },
+        { id: 'd0', name: 'D0', color: colorMap.pink }
       );
     } else if (device.type === 'sdi12') {
       terminals.push(
@@ -254,10 +263,11 @@ const getDeviceTerminals = (device) => {
         { id: 'gnd', name: 'GND', color: colorMap.red }
       );
     } else if (device.type === 'pulse') {
+      // Order: Power+ (top), GND (middle), Signal (bottom) to match pin order 3, 4, 6
       terminals.push(
-        { id: 'signal', name: 'Signal', color: colorMap.pink },
         { id: 'power', name: 'Power+', color: colorMap.green },
-        { id: 'gnd', name: 'GND', color: colorMap.yellow }
+        { id: 'gnd', name: 'GND', color: colorMap.yellow },
+        { id: 'signal', name: 'Signal', color: colorMap.pink }
       );
     }
   }
@@ -265,152 +275,141 @@ const getDeviceTerminals = (device) => {
   return terminals;
 };
 
-// Create edges for a device (pure function - moved outside component)
-// Generate default wire number based on edge type and device
+/* ==================================================================== */
+/*  Edge creation helpers                                               */
+/* ==================================================================== */
+
 const generateDefaultWireNumber = (edgeType, device) => {
-  // Use device channel/output to generate consistent wire numbers
   const baseNum = device.channel || device.output || device.input || 1;
-  
   const wireNumberMap = {
-    'vcc': '101',
-    'gnd': '102', 
-    'power': '103',
-    'signal': `${200 + baseNum}`,
-    'a1': `${300 + (device.output || 1)}`,
-    'a2': `${400 + (device.output || 1)}`,
-    'a': '501',
-    'b': '502',
-    'd0': '601',
-    'd1': '602',
-    'data': '701',
+    vcc: '101',
+    gnd: '102',
+    power: '103',
+    signal: `${200 + baseNum}`,
+    a1: `${300 + (device.output || 1)}`,
+    a2: `${400 + (device.output || 1)}`,
+    a: '501',
+    b: '502',
+    d0: '601',
+    d1: '602',
+    data: '701',
   };
-  
   return wireNumberMap[edgeType] || '100';
 };
 
 const createEdgesForDevice = (device) => {
   const edges = [];
-  const edgeId = `e-${device.id}`; // Use stable ID prefix based on device ID
+  const edgeId = `e-${device.id}`;
   const wireNumbers = device.wireNumbers || {};
 
   if (device.plugType === 'inputs') {
     if (device.type === 'power-input') {
-      // Power input - arrows point INTO neo (battery is source, neo is target)
       edges.push({
-        id: `${edgeId}-vcc`,
+        id: `${edgeId}-vcc-vcc+`,
         source: device.id,
         target: 'neo-inputs',
         sourceHandle: 'vcc+',
         targetHandle: 'vcc',
         type: 'coloredWire',
-        data: { 
-          label: 'VCC+ (Pin 1)', 
+        data: {
+          label: 'VCC+ (Pin 1)',
           color: colorMap.white,
-          wireNumber: wireNumbers['vcc'] || generateDefaultWireNumber('vcc', device)
+          wireNumber: wireNumbers['vcc'] || generateDefaultWireNumber('vcc', device),
         },
-        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.white },
       });
       edges.push({
-        id: `${edgeId}-gnd`,
+        id: `${edgeId}-gnd-gnd`,
         source: device.id,
         target: 'neo-inputs',
         sourceHandle: 'gnd',
         targetHandle: 'gnd',
         type: 'coloredWire',
-        data: { 
-          label: 'GND (Pin 2)', 
+        data: {
+          label: 'GND (Pin 2)',
           color: colorMap.brown,
-          wireNumber: wireNumbers['gnd'] || generateDefaultWireNumber('gnd', device)
+          wireNumber: wireNumbers['gnd'] || generateDefaultWireNumber('gnd', device),
         },
-        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.brown },
       });
     } else {
       const channelColors = { 1: 'red', 2: 'blue', 3: 'pink', 4: 'grey' };
       const pinMap = { 1: 'pin-8', 2: 'pin-7', 3: 'pin-6', 4: 'pin-5' };
-
       const channel = device.channel;
       const color = channelColors[channel] ? colorMap[channelColors[channel]] : '#999';
       const sourceHandle = pinMap[channel];
 
       if (sourceHandle) {
         edges.push({
-          id: `${edgeId}-signal`,
+          id: `${edgeId}-signal-${sourceHandle}`,
           source: 'neo-inputs',
           target: device.id,
-          sourceHandle: sourceHandle,
+          sourceHandle,
           targetHandle: 'signal',
           type: 'coloredWire',
-          data: { 
-            label: 'Signal', 
-            color: color,
-            wireNumber: wireNumbers['signal'] || generateDefaultWireNumber('signal', device)
+          data: {
+            label: 'Signal',
+            color,
+            wireNumber: wireNumbers['signal'] || generateDefaultWireNumber('signal', device),
           },
-          markerEnd: { type: MarkerType.ArrowClosed, color: color },
         });
       }
 
       edges.push({
-        id: `${edgeId}-power`,
+        id: `${edgeId}-power-power`,
         source: 'neo-inputs',
         target: device.id,
         sourceHandle: 'power',
         targetHandle: 'power+',
         type: 'coloredWire',
-        data: { 
-          label: 'Power', 
+        data: {
+          label: 'Power',
           color: colorMap.green,
-          wireNumber: wireNumbers['power'] || generateDefaultWireNumber('power', device)
+          wireNumber: wireNumbers['power'] || generateDefaultWireNumber('power', device),
         },
-        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.green },
       });
-      // Only add GND edge for 3-wire mode
+
       if (device.wireMode !== '2-wire') {
         edges.push({
-          id: `${edgeId}-gnd`,
+          id: `${edgeId}-gnd-gnd`,
           source: 'neo-inputs',
           target: device.id,
           sourceHandle: 'gnd',
           targetHandle: 'gnd',
           type: 'coloredWire',
-          data: { 
-            label: 'GND', 
+          data: {
+            label: 'GND',
             color: colorMap.yellow,
-            wireNumber: wireNumbers['gnd'] || generateDefaultWireNumber('gnd', device)
+            wireNumber: wireNumbers['gnd'] || generateDefaultWireNumber('gnd', device),
           },
-          markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.yellow },
         });
       }
     }
   } else if (device.plugType === 'outputs') {
     if (device.type === 'power-input') {
-      // Power input - arrows point INTO neo (battery is source, neo is target)
       edges.push({
-        id: `${edgeId}-vcc`,
+        id: `${edgeId}-vcc-vcc+`,
         source: device.id,
         target: 'neo-outputs',
         sourceHandle: 'vcc+',
         targetHandle: 'vcc',
         type: 'coloredWire',
-        data: { 
-          label: 'VCC+ (Pin 1)', 
+        data: {
+          label: 'VCC+ (Pin 1)',
           color: colorMap.white,
-          wireNumber: wireNumbers['vcc'] || generateDefaultWireNumber('vcc', device)
+          wireNumber: wireNumbers['vcc'] || generateDefaultWireNumber('vcc', device),
         },
-        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.white },
       });
       edges.push({
-        id: `${edgeId}-gnd`,
+        id: `${edgeId}-gnd-gnd`,
         source: device.id,
         target: 'neo-outputs',
         sourceHandle: 'gnd',
         targetHandle: 'gnd',
         type: 'coloredWire',
-        data: { 
-          label: 'GND (Pin 2)', 
+        data: {
+          label: 'GND (Pin 2)',
           color: colorMap.brown,
-          wireNumber: wireNumbers['gnd'] || generateDefaultWireNumber('gnd', device)
+          wireNumber: wireNumbers['gnd'] || generateDefaultWireNumber('gnd', device),
         },
-        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.brown },
       });
     } else if (device.type === 'latching') {
       const outputColors = device.output === 1 ? ['grey', 'pink'] : ['blue', 'red'];
@@ -418,243 +417,256 @@ const createEdgesForDevice = (device) => {
       const outputLabels = device.output === 1 ? ['Out 1', 'Out 2'] : ['Out 3', 'Out 4'];
 
       edges.push({
-        id: `${edgeId}-a1`,
+        id: `${edgeId}-a1-${pinMap[0]}`,
         source: 'neo-outputs',
         target: device.id,
         sourceHandle: pinMap[0],
         targetHandle: 'a1',
         type: 'coloredWire',
-        data: { 
-          label: outputLabels[0], 
+        data: {
+          label: outputLabels[0],
           color: colorMap[outputColors[0]],
-          wireNumber: wireNumbers['a1'] || generateDefaultWireNumber('a1', device)
+          wireNumber: wireNumbers['a1'] || generateDefaultWireNumber('a1', device),
         },
-        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap[outputColors[0]] },
       });
       edges.push({
-        id: `${edgeId}-a2`,
+        id: `${edgeId}-a2-${pinMap[1]}`,
         source: 'neo-outputs',
         target: device.id,
         sourceHandle: pinMap[1],
         targetHandle: 'a2',
         type: 'coloredWire',
-        data: { 
-          label: outputLabels[1], 
+        data: {
+          label: outputLabels[1],
           color: colorMap[outputColors[1]],
-          wireNumber: wireNumbers['a2'] || generateDefaultWireNumber('a2', device)
+          wireNumber: wireNumbers['a2'] || generateDefaultWireNumber('a2', device),
         },
-        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap[outputColors[1]] },
       });
     } else {
       const outputColors = { 1: 'grey', 2: 'pink', 3: 'blue', 4: 'red' };
       const pinMap = { 1: 'pin-5', 2: 'pin-6', 3: 'pin-7', 4: 'pin-8' };
       const output = device.output;
-
       const sourceHandle = pinMap[output];
       const color = outputColors[output] ? colorMap[outputColors[output]] : '#999';
 
       if (sourceHandle) {
         edges.push({
-          id: `${edgeId}-a1`,
+          id: `${edgeId}-a1-${sourceHandle}`,
           source: 'neo-outputs',
           target: device.id,
-          sourceHandle: sourceHandle,
+          sourceHandle,
           targetHandle: 'a1',
           type: 'coloredWire',
-          data: { 
-            label: `Out ${output}`, 
-            color: color,
-            wireNumber: wireNumbers['a1'] || generateDefaultWireNumber('a1', device)
+          data: {
+            label: `Out ${output}`,
+            color,
+            wireNumber: wireNumbers['a1'] || generateDefaultWireNumber('a1', device),
           },
-          markerEnd: { type: MarkerType.ArrowClosed, color: color },
         });
       }
 
       edges.push({
-        id: `${edgeId}-a2`,
+        id: `${edgeId}-a2-gnd`,
         source: 'neo-outputs',
         target: device.id,
         sourceHandle: 'gnd',
         targetHandle: 'a2',
         type: 'coloredWire',
-        data: { 
-          label: 'GND', 
+        data: {
+          label: 'GND',
           color: colorMap.yellow,
-          wireNumber: wireNumbers['a2'] || generateDefaultWireNumber('a2', device)
+          wireNumber: wireNumbers['a2'] || generateDefaultWireNumber('a2', device),
         },
-        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.yellow },
       });
     }
   } else if (device.plugType === 'communications') {
     if (device.type === 'power-input') {
-      // Power input - arrows point INTO neo (battery is source, neo is target)
       edges.push({
-        id: `${edgeId}-vcc`,
+        id: `${edgeId}-vcc-vcc+`,
         source: device.id,
         target: 'neo-comms',
         sourceHandle: 'vcc+',
         targetHandle: 'vcc',
         type: 'coloredWire',
-        data: { 
-          label: 'VCC+ (Pin 1)', 
+        data: {
+          label: 'VCC+ (Pin 1)',
           color: colorMap.white,
-          wireNumber: wireNumbers['vcc'] || generateDefaultWireNumber('vcc', device)
+          wireNumber: wireNumbers['vcc'] || generateDefaultWireNumber('vcc', device),
         },
-        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.white },
       });
       edges.push({
-        id: `${edgeId}-gnd`,
+        id: `${edgeId}-gnd-gnd`,
         source: device.id,
         target: 'neo-comms',
         sourceHandle: 'gnd',
         targetHandle: 'gnd',
         type: 'coloredWire',
-        data: { 
-          label: 'GND (Pin 2)', 
+        data: {
+          label: 'GND (Pin 2)',
           color: colorMap.brown,
-          wireNumber: wireNumbers['gnd'] || generateDefaultWireNumber('gnd', device)
+          wireNumber: wireNumbers['gnd'] || generateDefaultWireNumber('gnd', device),
         },
-        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.brown },
       });
     } else if (device.type === 'rs485') {
       edges.push({
-        id: `${edgeId}-b`,
+        id: `${edgeId}-b-b`,
         source: 'neo-comms',
         target: device.id,
         sourceHandle: 'b',
         targetHandle: 'b',
         type: 'coloredWire',
-        data: { 
-          label: 'B', 
+        data: {
+          label: 'B',
           color: colorMap.green,
-          wireNumber: wireNumbers['b'] || generateDefaultWireNumber('b', device)
+          wireNumber: wireNumbers['b'] || generateDefaultWireNumber('b', device),
         },
-        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.green },
       });
       edges.push({
-        id: `${edgeId}-a`,
+        id: `${edgeId}-a-a`,
         source: 'neo-comms',
         target: device.id,
         sourceHandle: 'a',
         targetHandle: 'a',
         type: 'coloredWire',
-        data: { 
-          label: 'A', 
+        data: {
+          label: 'A',
           color: colorMap.yellow,
-          wireNumber: wireNumbers['a'] || generateDefaultWireNumber('a', device)
+          wireNumber: wireNumbers['a'] || generateDefaultWireNumber('a', device),
         },
-        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.yellow },
       });
     } else if (device.type === 'wiegand') {
       edges.push({
-        id: `${edgeId}-d0`,
+        id: `${edgeId}-d0-d0`,
         source: 'neo-comms',
         target: device.id,
         sourceHandle: 'd0',
         targetHandle: 'd0',
         type: 'coloredWire',
-        data: { 
-          label: 'D0', 
+        data: {
+          label: 'D0',
           color: colorMap.pink,
-          wireNumber: wireNumbers['d0'] || generateDefaultWireNumber('d0', device)
+          wireNumber: wireNumbers['d0'] || generateDefaultWireNumber('d0', device),
         },
-        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.pink },
       });
       edges.push({
-        id: `${edgeId}-d1`,
+        id: `${edgeId}-d1-d1`,
         source: 'neo-comms',
         target: device.id,
         sourceHandle: 'd1',
         targetHandle: 'd1',
         type: 'coloredWire',
-        data: { 
-          label: 'D1', 
+        data: {
+          label: 'D1',
           color: colorMap.grey,
-          wireNumber: wireNumbers['d1'] || generateDefaultWireNumber('d1', device)
+          wireNumber: wireNumbers['d1'] || generateDefaultWireNumber('d1', device),
         },
-        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.grey },
       });
     } else if (device.type === 'sdi12') {
       edges.push({
-        id: `${edgeId}-data`,
+        id: `${edgeId}-data-data`,
         source: 'neo-comms',
         target: device.id,
         sourceHandle: 'data',
         targetHandle: 'data',
         type: 'coloredWire',
-        data: { 
-          label: 'Data', 
+        data: {
+          label: 'Data',
           color: colorMap.blue,
-          wireNumber: wireNumbers['data'] || generateDefaultWireNumber('data', device)
+          wireNumber: wireNumbers['data'] || generateDefaultWireNumber('data', device),
         },
-        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.blue },
       });
       edges.push({
-        id: `${edgeId}-gnd`,
+        id: `${edgeId}-gnd-gnd`,
         source: 'neo-comms',
         target: device.id,
         sourceHandle: 'gnd',
         targetHandle: 'gnd',
         type: 'coloredWire',
-        data: { 
-          label: 'GND', 
+        data: {
+          label: 'GND',
           color: colorMap.red,
-          wireNumber: wireNumbers['gnd'] || generateDefaultWireNumber('gnd', device)
+          wireNumber: wireNumbers['gnd'] || generateDefaultWireNumber('gnd', device),
         },
-        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.red },
       });
     } else if (device.type === 'pulse') {
-      // Pulse gets Power/GND from Inputs (cross-wiring) or locally if configured. 
-      // Standard spec says Pulse Adapter uses inputs.
-      // Signal comes from Comms.
-
       edges.push({
-        id: `${edgeId}-signal`,
+        id: `${edgeId}-signal-${device.input === 2 ? 'pin-5' : 'pin-6'}`,
         source: 'neo-comms',
         target: device.id,
         sourceHandle: device.input === 2 ? 'pin-5' : 'pin-6',
         targetHandle: 'signal',
         type: 'coloredWire',
-        data: { 
-          label: 'Signal', 
+        data: {
+          label: 'Signal',
           color: device.input === 2 ? colorMap.grey : colorMap.pink,
-          wireNumber: wireNumbers['signal'] || generateDefaultWireNumber('signal', device)
+          wireNumber: wireNumbers['signal'] || generateDefaultWireNumber('signal', device),
         },
-        markerEnd: { type: MarkerType.ArrowClosed, color: device.input === 2 ? colorMap.grey : colorMap.pink },
       });
-      // Power from Inputs plug (Neo Inputs node)
       edges.push({
-        id: `${edgeId}-power`,
+        id: `${edgeId}-power-power`,
         source: 'neo-inputs',
         target: device.id,
         sourceHandle: 'power',
         targetHandle: 'power',
         type: 'coloredWire',
-        data: { 
-          label: 'Power', 
+        data: {
+          label: 'Power',
           color: colorMap.green,
-          wireNumber: wireNumbers['power'] || generateDefaultWireNumber('power', device)
+          wireNumber: wireNumbers['power'] || generateDefaultWireNumber('power', device),
         },
-        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.green },
       });
       edges.push({
-        id: `${edgeId}-gnd`,
+        id: `${edgeId}-gnd-gnd`,
         source: 'neo-inputs',
         target: device.id,
         sourceHandle: 'gnd',
         targetHandle: 'gnd',
         type: 'coloredWire',
-        data: { 
-          label: 'GND', 
+        data: {
+          label: 'GND',
           color: colorMap.yellow,
-          wireNumber: wireNumbers['gnd'] || generateDefaultWireNumber('gnd', device)
+          wireNumber: wireNumbers['gnd'] || generateDefaultWireNumber('gnd', device),
         },
-        markerEnd: { type: MarkerType.ArrowClosed, color: colorMap.yellow },
       });
     }
   }
 
   return edges;
+};
+
+/* ==================================================================== */
+/*  Deterministic layout (replaces ELK)                                 */
+/* ==================================================================== */
+
+const SYSTEM_NODE_WIDTH = 380;
+const DEVICE_X = 500;
+const DEVICE_Y_SPACING = 180;
+
+const getSystemNodePosition = (id) => {
+  switch (id) {
+    case 'neo-inputs': return { x: 50, y: 50 };
+    case 'neo-comms': return { x: 50, y: 540 };
+    case 'neo-outputs': return { x: 50, y: 1030 };
+    default: return { x: 50, y: 50 };
+  }
+};
+
+const getSystemNodeLabel = (id) => {
+  switch (id) {
+    case 'neo-inputs': return 'Neo Device (Inputs)';
+    case 'neo-comms': return 'Neo Device (Coms)';
+    case 'neo-outputs': return 'Neo Device (Outputs)';
+    default: return 'Neo Device';
+  }
+};
+
+const getSystemNodePlugType = (id) => {
+  switch (id) {
+    case 'neo-inputs': return 'inputs';
+    case 'neo-comms': return 'communications';
+    case 'neo-outputs': return 'outputs';
+    default: return 'inputs';
+  }
 };
 
 export const SystemWiring = () => {
@@ -664,136 +676,104 @@ export const SystemWiring = () => {
   const [connectedDevices, setConnectedDevices] = useState([]);
   const [pinConflicts, setPinConflicts] = useState([]);
   const reactFlowWrapper = useRef(null);
+  const nodePositionsRef = useRef(new Map());
 
-  // Update Neo Device nodes based on connected devices
+  // Build/update nodes and edges whenever connectedDevices changes
+  // Merges with existing nodes to preserve dragged positions and avoid full reset
   useEffect(() => {
-    const inputs = connectedDevices.filter(d => d.plugType === 'inputs');
-    const outputs = connectedDevices.filter(d => d.plugType === 'outputs');
-    const comms = connectedDevices.filter(d => d.plugType === 'communications');
+    // Build system nodes (always present)
+    const systemNodeIds = ['neo-inputs', 'neo-comms', 'neo-outputs'];
+    const systemNodes = systemNodeIds.map(id => ({
+      id,
+      type: 'neoDevice',
+      position: getSystemNodePosition(id),
+      data: {
+        label: getSystemNodeLabel(id),
+        plugType: getSystemNodePlugType(id),
+      },
+    }));
 
-    // Neo Inputs Node
-    const inputNodeOutputs = [
-      { id: 'power', color: colorMap.green },
-      { id: 'gnd', color: colorMap.yellow },
-    ];
+    // Group devices by plugType for vertical stacking
+    const plugTypeBaseY = { inputs: 50, communications: 540, outputs: 1030 };
+    const plugTypeCounters = { inputs: 0, communications: 0, outputs: 0 };
 
-    // Add handles for used input channels or power-input
-    inputs.forEach(d => {
-      if (d.type === 'power-input') {
-        if (!inputNodeOutputs.find(o => o.id === 'pin-1')) inputNodeOutputs.push({ id: 'pin-1', color: colorMap.white });
-        if (!inputNodeOutputs.find(o => o.id === 'pin-2')) inputNodeOutputs.push({ id: 'pin-2', color: colorMap.brown });
-      } else {
-        if (d.channel === 1) inputNodeOutputs.push({ id: 'pin-8', color: colorMap.red });
-        if (d.channel === 2) inputNodeOutputs.push({ id: 'pin-7', color: colorMap.blue });
-        if (d.channel === 3) inputNodeOutputs.push({ id: 'pin-6', color: colorMap.pink });
-        if (d.channel === 4) inputNodeOutputs.push({ id: 'pin-5', color: colorMap.grey });
-      }
+    const deviceNodes = connectedDevices.map((device) => {
+      const plugType = device.plugType;
+      const idx = plugTypeCounters[plugType]++;
+      const isPowerInput = device.type === 'power-input';
+      const nodeType = isPowerInput ? 'battery'
+        : device.type === 'latching' ? 'latchingRelay'
+        : device.plugType === 'outputs' ? 'relay' : 'sensor';
+
+      // Use dragged position if available, otherwise default
+      const preservedPos = nodePositionsRef.current.get(device.id);
+      const defaultPos = { x: DEVICE_X, y: plugTypeBaseY[plugType] + (idx * DEVICE_Y_SPACING) };
+
+      return {
+        id: device.id,
+        type: nodeType,
+        position: preservedPos || defaultPos,
+        data: {
+          label: device.label,
+          sensorType: device.type,
+          terminals: getDeviceTerminals(device),
+          handleSide: device.handleSide || 'bottom',
+          terminalSides: device.terminalSides || {},
+        },
+      };
     });
 
-    // Neo Comms Node
-    const commsNodeOutputs = [];
-    comms.forEach(d => {
-      if (d.type === 'power-input') {
-        if (!commsNodeOutputs.find(o => o.id === 'pin-1')) commsNodeOutputs.push({ id: 'pin-1', color: colorMap.white });
-        if (!commsNodeOutputs.find(o => o.id === 'pin-2')) commsNodeOutputs.push({ id: 'pin-2', color: colorMap.brown });
-      } else if (d.type === 'rs485') {
-        if (!commsNodeOutputs.find(o => o.id === 'b')) commsNodeOutputs.push({ id: 'b', color: colorMap.green });
-        if (!commsNodeOutputs.find(o => o.id === 'a')) commsNodeOutputs.push({ id: 'a', color: colorMap.yellow });
-      } else if (d.type === 'wiegand') {
-        if (!commsNodeOutputs.find(o => o.id === 'd0')) commsNodeOutputs.push({ id: 'd0', color: colorMap.pink });
-        if (!commsNodeOutputs.find(o => o.id === 'd1')) commsNodeOutputs.push({ id: 'd1', color: colorMap.grey });
-      } else if (d.type === 'sdi12') {
-        if (!commsNodeOutputs.find(o => o.id === 'data')) commsNodeOutputs.push({ id: 'data', color: colorMap.blue });
-        if (!commsNodeOutputs.find(o => o.id === 'gnd')) commsNodeOutputs.push({ id: 'gnd', color: colorMap.red });
-      } else if (d.type === 'pulse') {
-        const pin = d.input === 2 ? 'pin-5' : 'pin-6'; // Default to Pin 6 (Pink)
-        const color = d.input === 2 ? colorMap.grey : colorMap.pink;
-        if (!commsNodeOutputs.find(o => o.id === pin)) commsNodeOutputs.push({ id: pin, color: color });
-      }
-    });
+    // Merge new nodes with previous ones to preserve positions & avoid full reset
+    setNodes((prev) => {
+      const prevMap = new Map(prev.map(n => [n.id, n]));
+      const validDeviceIds = new Set(connectedDevices.map(d => d.id));
 
-    // Neo Outputs Node
-    const outputNodeOutputs = [
-      { id: 'gnd', color: colorMap.yellow },
-    ];
-    outputs.forEach(d => {
-      if (d.type === 'power-input') {
-        if (!outputNodeOutputs.find(o => o.id === 'pin-1')) outputNodeOutputs.push({ id: 'pin-1', color: colorMap.white });
-        if (!outputNodeOutputs.find(o => o.id === 'pin-2')) outputNodeOutputs.push({ id: 'pin-2', color: colorMap.brown });
-      } else if (d.type === 'latching') {
-        if (d.output === 1) {
-          if (!outputNodeOutputs.find(o => o.id === 'pin-5')) outputNodeOutputs.push({ id: 'pin-5', color: colorMap.grey }); // A1
-          if (!outputNodeOutputs.find(o => o.id === 'pin-6')) outputNodeOutputs.push({ id: 'pin-6', color: colorMap.pink }); // A2
-        } else if (d.output === 3) {
-          if (!outputNodeOutputs.find(o => o.id === 'pin-7')) outputNodeOutputs.push({ id: 'pin-7', color: colorMap.blue }); // A3
-          if (!outputNodeOutputs.find(o => o.id === 'pin-8')) outputNodeOutputs.push({ id: 'pin-8', color: colorMap.red });  // A4
+      for (const n of [...systemNodes, ...deviceNodes]) {
+        const existing = prevMap.get(n.id);
+        if (existing) {
+          // Preserve existing position; update data
+          prevMap.set(n.id, { ...n, position: existing.position });
+        } else {
+          prevMap.set(n.id, n);
         }
-      } else {
-        if (d.output === 1) outputNodeOutputs.push({ id: 'pin-5', color: colorMap.grey });
-        if (d.output === 2) outputNodeOutputs.push({ id: 'pin-6', color: colorMap.pink });
-        if (d.output === 3) outputNodeOutputs.push({ id: 'pin-7', color: colorMap.blue });
-        if (d.output === 4) outputNodeOutputs.push({ id: 'pin-8', color: colorMap.red });
       }
+
+      // Remove device nodes that no longer exist
+      for (const [id, n] of prevMap) {
+        if (n.id.startsWith('device-') && !validDeviceIds.has(n.id)) {
+          prevMap.delete(id);
+        }
+      }
+
+      return Array.from(prevMap.values());
     });
 
-    setNodes(prev => {
-      // Keep existing user devices, just update the 3 system nodes
-      const userNodes = prev.filter(n => !['neo-inputs', 'neo-comms', 'neo-outputs'].includes(n.id));
-
-      const systemNodes = [
-        {
-          id: 'neo-inputs',
-          type: 'neoDevice',
-          position: { x: 50, y: 50 },
-          data: { label: 'Neo Device (Inputs)', outputs: inputNodeOutputs },
-        },
-        {
-          id: 'neo-comms',
-          type: 'neoDevice',
-          position: { x: 50, y: 450 },
-          data: { label: 'Neo Device (Coms)', outputs: commsNodeOutputs },
-        },
-        {
-          id: 'neo-outputs',
-          type: 'neoDevice',
-          position: { x: 50, y: 850 },
-          data: { label: 'Neo Device (Outputs)', outputs: outputNodeOutputs },
-        },
-      ];
-
-      return [...systemNodes, ...userNodes];
-    });
-  }, [connectedDevices, setNodes]);
+    // Build edges from all connected devices
+    const newEdges = connectedDevices.flatMap(createEdgesForDevice);
+    setEdges(newEdges);
+  }, [connectedDevices, setNodes, setEdges]);
 
   // Check for pin conflicts
-  // Pins are tracked per plug type, except power pins (3, 4) which are shared
-  // Communication buses (RS485, SDI-12, Wiegand) allow multiple devices on same pins
   const checkConflicts = useCallback((devices) => {
-    const signalPinUsage = {}; // Track by plugType -> pin -> device
-    const powerPinUsage = {};  // Track power pins globally (shared bus)
+    const signalPinUsage = {};
+    const powerPinUsage = {};
     const conflicts = [];
 
-    // Device types that support multi-drop (bus) configurations
     const busTypes = ['rs485', 'sdi12', 'wiegand'];
 
     devices.forEach(device => {
       const usedPins = getUsedPins(device);
       const isBusType = busTypes.includes(device.type);
 
-      // Check signal pins - these are per plug type
       usedPins.signalPins.forEach(pin => {
         const key = `${device.plugType}-${pin}`;
         
         if (isBusType) {
-          // For bus types (RS485, SDI-12, Wiegand), allow multiple devices
-          // Just track them but don't flag as conflict
           if (!signalPinUsage[key]) {
             signalPinUsage[key] = [];
           }
           signalPinUsage[key].push(device);
-          // No conflict for bus types - they share the same pins by design
         } else {
-          // For non-bus types, check for actual conflicts
           if (signalPinUsage[key] && !Array.isArray(signalPinUsage[key])) {
             conflicts.push({
               pin,
@@ -807,13 +787,9 @@ export const SystemWiring = () => {
         }
       });
 
-      // Check power pins - these are shared across all plugs (common power bus)
-      // Only warn if multiple devices try to use the same power pin on the SAME plug
       usedPins.powerPins.forEach(pin => {
-        // For power pins, conflicts only matter within the same physical plug
         const key = `${device.plugType}-${pin}`;
         if (powerPinUsage[key]) {
-          // This is more of a warning - power can be shared but might overload
           console.warn(`Power pin ${pin} used by multiple devices on ${device.plugType}`);
         } else {
           powerPinUsage[key] = device;
@@ -825,26 +801,20 @@ export const SystemWiring = () => {
     return conflicts;
   }, []);
 
-  // Recalculate pin conflicts whenever connectedDevices changes
   useEffect(() => {
     checkConflicts(connectedDevices);
   }, [connectedDevices, checkConflicts]);
 
   // Add a new device
   const addDevice = useCallback((deviceTemplate) => {
-    // Bus types can share pins (multi-drop communication)
     const busTypes = ['rs485', 'sdi12', 'wiegand'];
     const isBusType = busTypes.includes(deviceTemplate.type);
 
-    // Get all available options
     const availableOptions = deviceTemplate.channels || deviceTemplate.outputs || deviceTemplate.inputs || [];
 
-    // Try each option until we find one without conflicts
-    let selectedOption = null;
     let newDevice = null;
     let conflicts = [];
 
-    // For bus types, skip conflict checking - they share pins by design
     if (isBusType) {
       newDevice = {
         id: `device-${Date.now()}`,
@@ -855,11 +825,11 @@ export const SystemWiring = () => {
         powerSource: deviceTemplate.powerSource ? deviceTemplate.powerSource[0] : null,
         label: deviceTemplate.label,
         wireMode: deviceTemplate.channels ? '3-wire' : undefined,
+        handleSide: 'bottom',
+        terminalSides: {},
       };
     } else {
-      // Non-bus types need conflict checking
       for (const option of availableOptions) {
-        // Create a test device with this option
         const testDevice = {
           id: `device-${Date.now()}`,
           ...deviceTemplate,
@@ -869,21 +839,19 @@ export const SystemWiring = () => {
           powerSource: deviceTemplate.powerSource ? deviceTemplate.powerSource[0] : null,
           label: deviceTemplate.label,
           wireMode: deviceTemplate.channels ? '3-wire' : undefined,
+          handleSide: 'bottom',
+          terminalSides: {},
         };
 
-        // Check for conflicts with this configuration
         const tempDevices = [...connectedDevices, testDevice];
         conflicts = checkConflicts(tempDevices);
 
         if (conflicts.length === 0) {
-          // No conflict - use this option
-          selectedOption = option;
           newDevice = testDevice;
           break;
         }
       }
 
-      // If all options have conflicts, use the first available and warn
       if (!newDevice) {
         const firstOption = findNextAvailable(deviceTemplate, connectedDevices);
         newDevice = {
@@ -908,71 +876,30 @@ export const SystemWiring = () => {
     }
 
     setConnectedDevices(prev => [...prev, newDevice]);
-
-    // Create node for the device
-    const deviceCount = connectedDevices.filter(d => d.plugType === deviceTemplate.plugType).length;
-    const yOffset = deviceTemplate.plugType === 'inputs' ? 50 :
-      deviceTemplate.plugType === 'communications' ? 350 : 650;
-
-    // Determine node type: battery for power-input, latchingRelay for latching, relay for other outputs, sensor for others
-    const isPowerInput = deviceTemplate.type === 'power-input';
-    const getNodeType = () => {
-      if (isPowerInput) return 'battery';
-      if (deviceTemplate.type === 'latching') return 'latchingRelay';
-      if (deviceTemplate.plugType === 'outputs') return 'relay';
-      return 'sensor';
-    };
-
-    // Power input nodes shifted 15px left
-    const xOffset = isPowerInput ? 385 : 400;
-
-    const newNode = {
-      id: newDevice.id,
-      type: getNodeType(),
-      position: { x: xOffset + (deviceCount * 50), y: yOffset + (deviceCount * 30) },
-      data: {
-        label: newDevice.label,
-        sensorType: newDevice.type,
-        terminals: getDeviceTerminals(newDevice),
-      },
-    };
-
-    setNodes((prev) => [...prev, newNode]);
-
-    // Create edges
-    const newEdges = createEdgesForDevice(newDevice);
-    setEdges((prev) => [...prev, ...newEdges]);
-  }, [connectedDevices, checkConflicts, setNodes, setEdges]);
+    // Node and edges will be created by the layout effect above
+  }, [connectedDevices, checkConflicts]);
 
   // Remove a device
   const removeDevice = useCallback((deviceId) => {
-    setConnectedDevices((prev) => {
-      const updated = prev.filter(d => d.id !== deviceId);
-      // Recheck conflicts after removal
-      checkConflicts(updated);
-      return updated;
-    });
+    nodePositionsRef.current.delete(deviceId);
+    setConnectedDevices((prev) => prev.filter(d => d.id !== deviceId));
     setNodes((prev) => prev.filter(n => n.id !== deviceId));
-    setEdges((prev) => prev.filter(e => e.target !== deviceId && e.source !== deviceId));
     if (selectedDevice?.id === deviceId) {
       setSelectedDevice(null);
     }
-  }, [selectedDevice, setNodes, setEdges, checkConflicts]);
+  }, [selectedDevice, setNodes]);
 
   // Update device configuration
   const updateDevice = useCallback((deviceId, updates) => {
-    setConnectedDevices((prev) => {
-      const updated = prev.map(d => d.id === deviceId ? { ...d, ...updates } : d);
-      checkConflicts(updated);
-      return updated;
-    });
+    setConnectedDevices((prev) =>
+      prev.map(d => d.id === deviceId ? { ...d, ...updates } : d)
+    );
 
-    // Update node and edges
+    // Update node
     const device = connectedDevices.find(d => d.id === deviceId);
     if (device) {
       const updatedDevice = { ...device, ...updates };
 
-      // Update selected device if it's the one being modified
       if (selectedDevice && selectedDevice.id === deviceId) {
         setSelectedDevice(updatedDevice);
       }
@@ -983,27 +910,14 @@ export const SystemWiring = () => {
             ...n,
             data: {
               ...n.data,
-              label: updatedDevice.label, // Update label on node
+              label: updatedDevice.label,
               terminals: getDeviceTerminals(updatedDevice)
             }
           }
           : n
       ));
-
-      // Recreate edges
-      setEdges((prev) => {
-        // Remove edges where device is source OR target (handles power input which is source)
-        const withoutDeviceEdges = prev.filter(e => e.target !== deviceId && e.source !== deviceId);
-        const newEdges = createEdgesForDevice(updatedDevice);
-        return [...withoutDeviceEdges, ...newEdges];
-      });
     }
-  }, [connectedDevices, checkConflicts, setNodes, setEdges, selectedDevice]);
-
-  // NO_OP: Initialization is handled by the useEffect above
-  // useState(() => {
-  //   initializeNeoDevices();
-  // });
+  }, [connectedDevices, setNodes, selectedDevice]);
 
   const onNodeClick = useCallback((event, node) => {
     if (node.id.startsWith('device-')) {
@@ -1014,37 +928,27 @@ export const SystemWiring = () => {
 
   // Custom handler for node changes that also syncs connectedDevices when nodes are deleted
   const handleNodesChange = useCallback((changes) => {
-    // First, apply the standard node changes
     onNodesChange(changes);
 
-    // Check for removed nodes (when user deletes a device)
     const removedNodeIds = changes
       .filter(change => change.type === 'remove')
       .map(change => change.id);
 
     if (removedNodeIds.length > 0) {
-      // Filter out system nodes (neo-*) - those shouldn't affect connectedDevices
       const removedDeviceIds = removedNodeIds.filter(id => id.startsWith('device-'));
 
       if (removedDeviceIds.length > 0) {
-        // Remove the deleted devices from connectedDevices
         setConnectedDevices(prev => {
           const updated = prev.filter(d => !removedDeviceIds.includes(d.id));
           return updated;
         });
 
-        // Clear selected device if it was deleted
         if (selectedDevice && removedDeviceIds.includes(selectedDevice.id)) {
           setSelectedDevice(null);
         }
-
-        // Also remove edges connected to deleted nodes
-        setEdges(prev => prev.filter(e =>
-          !removedDeviceIds.includes(e.source) && !removedDeviceIds.includes(e.target)
-        ));
       }
     }
-  }, [onNodesChange, setEdges, selectedDevice]);
+  }, [onNodesChange, selectedDevice]);
 
   // Export Design as JSON
   const handleSaveDesign = () => {
@@ -1067,97 +971,43 @@ export const SystemWiring = () => {
       try {
         const json = JSON.parse(e.target.result);
         if (Array.isArray(json)) {
-          // Clear existing nodes and edges first
           setNodes([]);
           setEdges([]);
 
-          // Set the loaded devices (add default wireMode for legacy devices)
           const devicesWithWireMode = json.map(d => ({
             ...d,
             wireMode: d.wireMode || (d.channels && d.type !== 'power-input' ? '3-wire' : undefined)
           }));
           setConnectedDevices(devicesWithWireMode);
-
-          // Create nodes and edges for each loaded device
-          setTimeout(() => {
-            const newNodes = [];
-            const newEdges = [];
-
-            devicesWithWireMode.forEach((device, index) => {
-              const deviceCount = index;
-              const yOffset = device.plugType === 'inputs' ? 50 :
-                device.plugType === 'communications' ? 350 : 650;
-
-              // Determine node type
-              const isPowerInput = device.type === 'power-input';
-              const getNodeType = () => {
-                if (isPowerInput) return 'battery';
-                if (device.type === 'latching') return 'latchingRelay';
-                if (device.plugType === 'outputs') return 'relay';
-                return 'sensor';
-              };
-
-              // Power input nodes shifted 15px left
-              const xOffset = isPowerInput ? 385 : 400;
-
-              const newNode = {
-                id: device.id,
-                type: getNodeType(),
-                position: { x: xOffset + (deviceCount * 50), y: yOffset + (deviceCount * 30) },
-                data: {
-                  label: device.label,
-                  sensorType: device.type,
-                  terminals: getDeviceTerminals(device),
-                },
-              };
-              newNodes.push(newNode);
-
-              // Create edges for this device
-              const deviceEdges = createEdgesForDevice(device);
-              newEdges.push(...deviceEdges);
-            });
-
-            setNodes(prev => [...prev, ...newNodes]);
-            setEdges(prev => [...prev, ...newEdges]);
-          }, 0);
         } else {
           alert("Invalid file format: Expected an array of devices.");
         }
-      } catch (err) {
+      } catch {
         alert("Error parsing JSON file");
       }
     };
     reader.readAsText(file);
-    // Reset input value to allow re-uploading same file
     event.target.value = '';
   };
 
   // Export Wiring Schedule as CSV
   const handleExportCSV = () => {
-    // Context-aware pin label generator
     const getPinLabel = (pin, device) => {
       const colorNames = { 1: 'White', 2: 'Brown', 3: 'Green', 4: 'Yellow', 5: 'Grey', 6: 'Pink', 7: 'Blue', 8: 'Red' };
       const color = colorNames[pin] || 'Unknown';
 
-      // Power pins (3, 4) - same for all
       if (pin === 3) return `Pin ${pin} ${color} - Sensor Power Out (Vout+)`;
       if (pin === 4) return `Pin ${pin} ${color} - Sensor GND`;
-
-      // Solar pins (1, 2) - only for power-input
       if (pin === 1) return `Pin ${pin} ${color} - VCC+ (Solar/Supply)`;
       if (pin === 2) return `Pin ${pin} ${color} - GND`;
 
-      // Signal pins (5-8) - context dependent
       if (device.plugType === 'inputs') {
-        // Inputs plug: Analog inputs
         const inputMap = { 5: 'Input 4', 6: 'Input 3', 7: 'Input 2', 8: 'Input 1' };
         return `Pin ${pin} ${color} - ${inputMap[pin] || 'Signal'}`;
       } else if (device.plugType === 'outputs') {
-        // Outputs plug: Relay outputs
         const outputMap = { 5: 'Output 1 (A1)', 6: 'Output 2 (A2)', 7: 'Output 3 (A3)', 8: 'Output 4 (A4)' };
         return `Pin ${pin} ${color} - ${outputMap[pin] || 'Output'}`;
       } else if (device.plugType === 'communications') {
-        // Communications plug: Digital I/O
         if (device.type === 'rs485') {
           if (pin === 3) return `Pin ${pin} ${color} - RS485 B`;
           if (pin === 4) return `Pin ${pin} ${color} - RS485 A`;
@@ -1177,22 +1027,16 @@ export const SystemWiring = () => {
       return `Pin ${pin} ${color}`;
     };
 
-    // Header
     let csvContent = "Device Name,Type,Plug,Connections\n";
 
-    // Rows
     connectedDevices.forEach(device => {
       const pins = getUsedPins(device);
       const connectionStrings = [];
 
-      // For sensors (non-power-input), exclude pins 1 & 2 (solar supply)
-      // For power-input, show only pins 1 & 2
       let pinsToShow;
       if (device.type === 'power-input') {
-        // Power input: show only pins 1 & 2
         pinsToShow = [1, 2];
       } else {
-        // Sensors: show signal pins and power pins (3-8), exclude solar pins 1-2
         pinsToShow = [...new Set([...pins.signalPins, ...pins.powerPins])].sort((a, b) => a - b);
       }
 
@@ -1214,11 +1058,6 @@ export const SystemWiring = () => {
     document.body.removeChild(link);
   };
 
-  const getColorName = (pin) => {
-    const names = { 1: 'White', 2: 'Brown', 3: 'Green', 4: 'Yellow', 5: 'Grey', 6: 'Pink', 7: 'Blue', 8: 'Red' };
-    return names[pin] || 'Unknown';
-  };
-
   // Export diagram as PNG image
   const handleExportImage = useCallback(async () => {
     if (!reactFlowWrapper.current) {
@@ -1226,14 +1065,12 @@ export const SystemWiring = () => {
       return;
     }
 
-    // Store elements that need to be hidden/restored
     const elementsToRestore = [];
 
     try {
       const { toSvg } = await import('html-to-image');
       const container = reactFlowWrapper.current;
 
-      // Elements to hide during capture
       const selectorsToHide = [
         '.diagram-actions',
         '.conflict-warning',
@@ -1242,7 +1079,6 @@ export const SystemWiring = () => {
         '.react-flow__attribution',
       ];
 
-      // Hide elements and store original display values
       selectorsToHide.forEach(selector => {
         const el = container.querySelector(selector);
         if (el) {
@@ -1255,11 +1091,9 @@ export const SystemWiring = () => {
         }
       });
 
-      // Get current theme background color
       const isDarkTheme = document.body.getAttribute('data-theme') !== 'light';
       const bgColor = isDarkTheme ? '#0a0a0f' : '#f5f5f7';
 
-      // Get the viewport element that contains the actual diagram content
       const reactFlowEl = container.querySelector('.react-flow');
       const viewportEl = container.querySelector('.react-flow__viewport');
 
@@ -1267,29 +1101,14 @@ export const SystemWiring = () => {
         throw new Error('ReactFlow elements not found');
       }
 
-      // Calculate the bounds of all visible content
-      // Get all node elements and find their bounding box
       const nodeElements = container.querySelectorAll('.react-flow__node');
-      const edgeElements = container.querySelectorAll('.react-flow__edge');
 
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
-      // Get transform info from viewport
-      const transform = viewportEl.style.transform;
-      let offsetX = 0, offsetY = 0, scale = 1;
-      const transformMatch = transform.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)\s*scale\(([\d.]+)\)/);
-      if (transformMatch) {
-        offsetX = parseFloat(transformMatch[1]);
-        offsetY = parseFloat(transformMatch[2]);
-        scale = parseFloat(transformMatch[3]);
-      }
-
-      // Calculate bounds from nodes
       nodeElements.forEach(node => {
         const rect = node.getBoundingClientRect();
         const containerRect = reactFlowEl.getBoundingClientRect();
 
-        // Get position relative to the container
         const x = (rect.left - containerRect.left);
         const y = (rect.top - containerRect.top);
         const width = rect.width;
@@ -1301,22 +1120,17 @@ export const SystemWiring = () => {
         maxY = Math.max(maxY, y + height);
       });
 
-      // Add padding
       const padding = 50;
       minX = Math.max(0, minX - padding);
       minY = Math.max(0, minY - padding);
       maxX = maxX + padding;
       maxY = maxY + padding;
 
-      // Use the full container dimensions to capture everything
       const captureWidth = reactFlowEl.offsetWidth;
       const captureHeight = reactFlowEl.offsetHeight;
 
-      // Wait for UI to update
       await new Promise(resolve => setTimeout(resolve, 300));
 
-      // Capture the SVG - edges naturally render under nodes in React Flow
-      // The stacking order is preserved in the export
       const svgDataUrl = await toSvg(reactFlowEl, {
         backgroundColor: bgColor,
         width: captureWidth,
@@ -1326,7 +1140,6 @@ export const SystemWiring = () => {
           overflow: 'visible',
         },
         filter: (node) => {
-          // Exclude controls and hidden elements
           if (node.classList) {
             if (node.classList.contains('react-flow__controls')) return false;
             if (node.classList.contains('react-flow__minimap')) return false;
@@ -1336,7 +1149,6 @@ export const SystemWiring = () => {
         }
       });
 
-      // Convert SVG to PNG
       const img = new Image();
       img.crossOrigin = 'anonymous';
 
@@ -1346,7 +1158,6 @@ export const SystemWiring = () => {
         img.src = svgDataUrl;
       });
 
-      // Create canvas
       const canvas = document.createElement('canvas');
       const outputScale = 2;
       canvas.width = captureWidth * outputScale;
@@ -1357,7 +1168,6 @@ export const SystemWiring = () => {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      // Download as PNG
       const dataUrl = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       const timestamp = new Date().toISOString().slice(0, 10);
@@ -1371,7 +1181,6 @@ export const SystemWiring = () => {
       console.error('Error exporting image:', err);
       alert('Failed to export image. Please try again.');
     } finally {
-      // Always restore hidden elements
       elementsToRestore.forEach(({ element, originalDisplay, originalVisibility }) => {
         element.style.display = originalDisplay || '';
         element.style.visibility = originalVisibility || '';
@@ -1390,7 +1199,6 @@ export const SystemWiring = () => {
       const { toSvg } = await import('html-to-image');
       const container = reactFlowWrapper.current;
 
-      // Hide UI elements and grid during capture
       const selectorsToHide = ['.diagram-actions', '.conflict-warning', '.react-flow__controls', '.react-flow__minimap', '.react-flow__attribution'];
       const elementsToRestore = [];
       
@@ -1402,7 +1210,6 @@ export const SystemWiring = () => {
         }
       });
 
-      // Hide the grid/background dots
       const bgElement = container.querySelector('.react-flow__background');
       if (bgElement) {
         elementsToRestore.push({ element: bgElement, originalDisplay: bgElement.style.display });
@@ -1417,12 +1224,10 @@ export const SystemWiring = () => {
 
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Find bounds of all nodes using React Flow's internal positioning
       const nodes = reactFlowWrapper.current.querySelectorAll('.react-flow__node');
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       
       nodes.forEach(node => {
-        // Parse the style attribute for transform
         const style = node.getAttribute('style') || '';
         const translateMatch = style.match(/translate\(([^,]+)px,\s*([^)]+)px\)/);
         
@@ -1439,7 +1244,6 @@ export const SystemWiring = () => {
         }
       });
       
-      // Default to container size if no nodes found
       if (minX === Infinity) {
         minX = 0;
         minY = 0;
@@ -1447,18 +1251,17 @@ export const SystemWiring = () => {
         maxY = reactFlowEl.offsetHeight;
       }
       
-      // Add padding
       const padding = 80;
       minX = Math.max(0, minX - padding);
       minY = Math.max(0, minY - padding);
       maxX = maxX + padding;
       maxY = maxY + padding;
       
-      // Capture dimensions
       const captureWidth = maxX;
       const captureHeight = maxY;
+      const contentWidth = maxX - minX;
+      const contentHeight = maxY - minY;
 
-      // Capture the full diagram
       const svgDataUrl = await toSvg(reactFlowEl, {
         backgroundColor: bgColor,
         width: captureWidth,
@@ -1476,19 +1279,16 @@ export const SystemWiring = () => {
         }
       });
 
-      // Restore hidden elements
       elementsToRestore.forEach(({ element, originalDisplay }) => {
         element.style.display = originalDisplay || '';
       });
 
-      // Create PDF in LANDSCAPE orientation
       const doc = new jsPDF('l', 'mm', 'a4');
-      const pageWidth = doc.internal.pageSize.getWidth(); // 297mm in landscape
-      const pageHeight = doc.internal.pageSize.getHeight(); // 210mm in landscape
+      const pageWidth = doc.internal.pageSize.getWidth();
+
       const margin = 15;
       const timestamp = new Date().toISOString().slice(0, 10);
 
-      // Header
       doc.setFillColor(0, 0, 0);
       doc.rect(0, 0, pageWidth, 20, 'F');
       doc.setTextColor(0, 255, 255);
@@ -1500,14 +1300,12 @@ export const SystemWiring = () => {
 
       let yPos = 28;
 
-      // Bill of Materials Section
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.text('1. BILL OF MATERIALS', margin, yPos);
       yPos += 6;
 
-      // BOM Table
       const bomData = connectedDevices.map((device, idx) => [
         idx + 1,
         device.label,
@@ -1536,7 +1334,6 @@ export const SystemWiring = () => {
 
       yPos = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 10 : yPos + 30;
 
-      // Connections Section - add new page if needed
       if (yPos > 140) {
         doc.addPage('a4', 'landscape');
         yPos = 15;
@@ -1547,10 +1344,8 @@ export const SystemWiring = () => {
       doc.text('2. CONNECTION SCHEDULE', margin, yPos);
       yPos += 6;
 
-      // Connection data
       const connectionData = [];
       connectedDevices.forEach(device => {
-        const pins = getUsedPins(device);
         const wireNumbers = device.wireNumbers || {};
         
         if (device.plugType === 'inputs') {
@@ -1652,22 +1447,28 @@ export const SystemWiring = () => {
         }
       });
 
-      // Convert SVG to PNG for PDF with 2x larger canvas
       const svgToPng = async (svgUrl) => {
         return new Promise((resolve, reject) => {
           const img = new Image();
           img.crossOrigin = 'anonymous';
           img.onload = () => {
+            // Crop to content bounds, removing empty margins
+            const scaleX = img.width / maxX;
+            const scaleY = img.height / maxY;
+            const scale = Math.min(scaleX, scaleY);
+
+            const cropX = minX * scale;
+            const cropY = minY * scale;
+            const cropW = contentWidth * scale;
+            const cropH = contentHeight * scale;
+
             const canvas = document.createElement('canvas');
-            // Make canvas 2x larger to ensure full coverage
-            canvas.width = img.width * 2;
-            canvas.height = img.height * 2;
+            canvas.width = cropW * 2;
+            canvas.height = cropH * 2;
             const ctx = canvas.getContext('2d');
-            // Fill with white/black background
             ctx.fillStyle = isDarkTheme ? '#000000' : '#ffffff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            // Draw image scaled to fit the larger canvas
-            ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
             resolve(canvas.toDataURL('image/png'));
           };
           img.onerror = reject;
@@ -1677,59 +1478,37 @@ export const SystemWiring = () => {
 
       const pngDataUrl = await svgToPng(svgDataUrl);
 
-      // Add diagram on a LANDSCAPE page - MAXIMIZE diagram size
       doc.addPage('a4', 'landscape');
-      const landscapeWidth = doc.internal.pageSize.getWidth(); // 297mm
-      const landscapeHeight = doc.internal.pageSize.getHeight(); // 210mm
-      
-      // Minimal header
+      const diagramPageWidth = doc.internal.pageSize.getWidth();
+      const diagramPageHeight = doc.internal.pageSize.getHeight();
+
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.text('3. WIRING DIAGRAM', margin, 10);
 
-      // Calculate image dimensions to MAXIMIZE on page
-      const headerSpace = 12; // Space for header
-      const footerSpace = 8;  // Space for footer
-      const availableWidth = landscapeWidth - (margin * 2);
-      const availableHeight = landscapeHeight - headerSpace - footerSpace;
-      
-      const imgAspectRatio = captureWidth / captureHeight;
+      const headerSpace = 12;
+      const footerSpace = 8;
+      const availableWidth = diagramPageWidth - (margin * 2);
+      const availableHeight = diagramPageHeight - headerSpace - footerSpace;
+
+      const imgAspectRatio = contentWidth / contentHeight;
       const pageAspectRatio = availableWidth / availableHeight;
-      
+
       let finalWidth, finalHeight;
-      
-      // Maximize the image to fill the page
+
       if (imgAspectRatio > pageAspectRatio) {
-        // Image is wider than page - fit to width
         finalWidth = availableWidth;
         finalHeight = finalWidth / imgAspectRatio;
       } else {
-        // Image is taller than page - fit to height
         finalHeight = availableHeight;
         finalWidth = finalHeight * imgAspectRatio;
       }
-      
-      // Scale to 110% as requested
-      finalWidth = finalWidth * 1.1;
-      finalHeight = finalHeight * 1.1;
-      
-      // If scaled image is too big, fit to page
-      if (finalWidth > availableWidth) {
-        finalWidth = availableWidth;
-        finalHeight = finalWidth / imgAspectRatio;
-      }
-      if (finalHeight > availableHeight) {
-        finalHeight = availableHeight;
-        finalWidth = finalHeight * imgAspectRatio;
-      }
-      
-      // Center the image on the page
+
       const xOffset = margin + (availableWidth - finalWidth) / 2;
       const yOffset = headerSpace + (availableHeight - finalHeight) / 2;
 
       doc.addImage(pngDataUrl, 'PNG', xOffset, yOffset, finalWidth, finalHeight);
 
-      // Footer on all pages
       const pageCount = doc.internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
@@ -1741,7 +1520,6 @@ export const SystemWiring = () => {
         doc.text('NEO Wiring Tool', currentWidth - margin - 35, currentHeight - 5);
       }
 
-      // Save PDF
       doc.save(`neo_wiring_report_${timestamp}.pdf`);
 
     } catch (err) {
@@ -1769,9 +1547,11 @@ export const SystemWiring = () => {
             onNodeClick={onNodeClick}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
-            fitView
+            minZoom={0.2}
+            maxZoom={2}
             attributionPosition="bottom-left"
           >
+            <FitViewOnMount />
             {/* No background grid - clean AutoCAD style */}
             <Controls />
             <MiniMap

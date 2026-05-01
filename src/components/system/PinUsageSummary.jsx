@@ -117,13 +117,6 @@ export const PinUsageSummary = ({ connectedDevices, pinConflicts }) => {
     return pinConflicts.some(c => c.pin === pin && c.plugType === plugType);
   };
 
-  // Get devices by plug type
-  const devicesByPlug = {
-    inputs: connectedDevices.filter(d => d.plugType === 'inputs'),
-    communications: connectedDevices.filter(d => d.plugType === 'communications'),
-    outputs: connectedDevices.filter(d => d.plugType === 'outputs')
-  };
-
   const plugLabels = {
     inputs: 'Inputs Plug',
     communications: 'Communications Plug',

@@ -1,4 +1,4 @@
-export const DeviceConfigPanel = ({ device, onUpdate, onRemove, availableDevices }) => {
+export const DeviceConfigPanel = ({ device, onUpdate, onRemove }) => {
   if (!device) {
     return (
       <div className="device-config-panel empty">
@@ -213,6 +213,51 @@ export const DeviceConfigPanel = ({ device, onUpdate, onRemove, availableDevices
         </div>
       )}
 
+      <div className="config-section">
+        <label htmlFor="handle-side-select">Default Connection Side:</label>
+        <select
+          id="handle-side-select"
+          value={device.handleSide || 'bottom'}
+          onChange={(e) => onUpdate(device.id, { handleSide: e.target.value, terminalSides: {} })}
+        >
+          <option value="top">Top</option>
+          <option value="bottom">Bottom</option>
+          <option value="left">Left</option>
+          <option value="right">Right</option>
+        </select>
+      </div>
+
+      <div className="config-section">
+        <h4>Terminal Positions</h4>
+        <div className="terminal-side-list">
+          {getTerminalConfig(device).map((term) => {
+            const currentSide = device.terminalSides?.[term.id] || device.handleSide || 'bottom';
+            return (
+              <div key={term.id} className="terminal-side-item">
+                <span className="terminal-name">{term.name}</span>
+                <select
+                  value={currentSide}
+                  onChange={(e) => {
+                    const newSides = { ...(device.terminalSides || {}) };
+                    if (e.target.value === (device.handleSide || 'bottom')) {
+                      delete newSides[term.id];
+                    } else {
+                      newSides[term.id] = e.target.value;
+                    }
+                    onUpdate(device.id, { terminalSides: newSides });
+                  }}
+                >
+                  <option value="top">Top</option>
+                  <option value="bottom">Bottom</option>
+                  <option value="left">Left</option>
+                  <option value="right">Right</option>
+                </select>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Wire Number Editor */}
       <div className="config-section wire-number-section">
         <h4>Wire Numbers</h4>
@@ -262,6 +307,52 @@ export const DeviceConfigPanel = ({ device, onUpdate, onRemove, availableDevices
       </div>
     </div>
   );
+};
+
+// Helper: Generate terminal IDs/names for side configuration
+const getTerminalConfig = (device) => {
+  const terminals = [];
+  if (device.plugType === 'inputs') {
+    if (device.type === 'power-input') {
+      terminals.push({ id: 'vcc+', name: 'VCC+' });
+      terminals.push({ id: 'gnd', name: 'GND' });
+    } else {
+      const is2Wire = device.wireMode === '2-wire';
+      terminals.push({ id: 'power+', name: 'Power+' });
+      if (!is2Wire) terminals.push({ id: 'gnd', name: 'GND' });
+      terminals.push({ id: 'signal', name: 'Signal' });
+    }
+  } else if (device.plugType === 'outputs') {
+    if (device.type === 'power-input') {
+      terminals.push({ id: 'vcc+', name: 'VCC+' });
+      terminals.push({ id: 'gnd', name: 'GND' });
+    } else if (device.type === 'latching') {
+      terminals.push({ id: 'a2', name: 'A2' });
+      terminals.push({ id: 'a1', name: 'A1' });
+    } else {
+      terminals.push({ id: 'a2', name: 'A2' });
+      terminals.push({ id: 'a1', name: 'A1' });
+    }
+  } else if (device.plugType === 'communications') {
+    if (device.type === 'power-input') {
+      terminals.push({ id: 'vcc+', name: 'VCC+' });
+      terminals.push({ id: 'gnd', name: 'GND' });
+    } else if (device.type === 'rs485') {
+      terminals.push({ id: 'b', name: 'B' });
+      terminals.push({ id: 'a', name: 'A' });
+    } else if (device.type === 'wiegand') {
+      terminals.push({ id: 'd0', name: 'D0' });
+      terminals.push({ id: 'd1', name: 'D1' });
+    } else if (device.type === 'sdi12') {
+      terminals.push({ id: 'data', name: 'Data' });
+      terminals.push({ id: 'gnd', name: 'GND' });
+    } else if (device.type === 'pulse') {
+      terminals.push({ id: 'signal', name: 'Signal' });
+      terminals.push({ id: 'power', name: 'Power+' });
+      terminals.push({ id: 'gnd', name: 'GND' });
+    }
+  }
+  return terminals;
 };
 
 // Helper: Generate list of connections for a device

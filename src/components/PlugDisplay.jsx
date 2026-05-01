@@ -1,12 +1,8 @@
-import { colorMap, plugOptions } from '../data/plugData';
+import { colorMap } from '../data/plugData';
 
 export const PlugDisplay = ({ pins, allPins, title, selectedChannel, plugType, typeData, usedPins }) => {
   // Check if this is pulse counter
   const isPulseCounter = typeData?.value === 'pulse';
-
-  // Get pins for inputs plug (needed for pulse counter)
-  const inputsPlug = plugOptions.find(p => p.value === 'inputs');
-  const inputsPins = inputsPlug?.types.find(t => t.value === '0-10v')?.pins;
 
   // Filter to show only relevant pins for pulse counter
   const getPulseCounterCommsPins = () => {
@@ -32,37 +28,6 @@ export const PlugDisplay = ({ pins, allPins, title, selectedChannel, plugType, t
     (plugType === 'inputs' && typeData?.value !== 'power-input') ||
     (plugType === 'outputs' && typeData?.value !== 'power-input')
   );
-
-  // Determine if a pin is the selected channel
-  const isSelectedChannel = (pin) => {
-    if (!selectedChannel) return false;
-
-    const channelNum = parseInt(selectedChannel);
-
-    if (plugType === 'inputs') {
-      // Map channel to pins (1=Red/Pin8, 2=Blue/Pin7, 3=Pink/Pin6, 4=Grey/Pin5)
-      const channelPins = {
-        1: { pin: 8, color: 'red' },
-        2: { pin: 7, color: 'blue' },
-        3: { pin: 6, color: 'pink' },
-        4: { pin: 5, color: 'grey' }
-      };
-      const channel = channelPins[channelNum];
-      return channel && pin.pin === channel.pin;
-    } else if (plugType === 'outputs') {
-      // Map output to pins (1=Grey/Pin5, 2=Pink/Pin6, 3=Blue/Pin7, 4=Red/Pin8)
-      const outputPins = {
-        1: { pin: 5, color: 'grey' },
-        2: { pin: 6, color: 'pink' },
-        3: { pin: 7, color: 'blue' },
-        4: { pin: 8, color: 'red' }
-      };
-      const output = outputPins[channelNum];
-      return output && pin.pin === output.pin;
-    }
-
-    return false;
-  };
 
   // Render pin row
   const renderPinRow = (pin, isSelected = false) => (

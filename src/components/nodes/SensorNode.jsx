@@ -3,176 +3,223 @@ import { Handle, Position } from 'reactflow';
 export const SensorNode = ({ data }) => {
   const { label, sensorType, terminals } = data;
 
-  // Determine the sensor type symbol and reference designator
-  let sensorSymbol = '';
+  // Determine the sensor type symbol and reference designator per IEC 60617
+  let centerSymbol = '';
   let refDes = '';
   let description = '';
-  
+  let bodyTextColor = 'var(--text-primary)';
+
   if (sensorType === '0-10v' || label?.includes('0-10')) {
-    sensorSymbol = '0-10V';
+    centerSymbol = 'U~';
     refDes = 'AI';
     description = 'Analog Input';
+    bodyTextColor = '#ffffff';
   } else if (sensorType === '4-20ma' || label?.includes('4-20')) {
-    sensorSymbol = '4-20mA';
+    centerSymbol = 'I~';
     refDes = 'AI';
     description = 'Analog Input';
+    bodyTextColor = '#ffffff';
   } else if (sensorType === 'voltage-sensing') {
-    sensorSymbol = 'V';
+    centerSymbol = 'V';
     refDes = 'VS';
     description = 'Voltage Sense';
+    bodyTextColor = '#ffffff';
   } else if (sensorType === 'rs485') {
-    sensorSymbol = '485';
+    centerSymbol = 'RS485';
     refDes = 'COM';
     description = 'RS485';
+    bodyTextColor = 'var(--accent-color)';
   } else if (sensorType === 'sdi12') {
-    sensorSymbol = 'SDI';
+    centerSymbol = 'SDI-12';
     refDes = 'COM';
     description = 'SDI-12';
+    bodyTextColor = 'var(--accent-color)';
   } else if (sensorType === 'wiegand') {
-    sensorSymbol = 'WG';
+    centerSymbol = 'WIEGAND';
     refDes = 'RD';
     description = 'Wiegand';
+    bodyTextColor = 'var(--accent-color)';
   } else if (sensorType === 'pulse') {
-    sensorSymbol = 'P';
+    centerSymbol = 'P';
     refDes = 'PI';
     description = 'Pulse In';
+    bodyTextColor = 'var(--accent-secondary)';
   } else if (sensorType === 'power-input') {
-    sensorSymbol = 'DC';
+    centerSymbol = 'DC';
     refDes = 'PS';
     description = 'Power Supply';
+    bodyTextColor = '#ffffff';
   } else {
-    sensorSymbol = 'S';
+    centerSymbol = 'S';
     refDes = 'S';
     description = 'Sensor';
+    bodyTextColor = '#ffffff';
   }
 
-  // Power supply uses source handles (outputs), sensors use target handles (inputs)
   const isPowerSource = sensorType === 'power-input';
+  const symbolFontSize = centerSymbol.length > 3 ? '14px' : '24px';
+  const termCount = terminals?.length || 0;
+  const defaultSide = data.handleSide || 'bottom';
+  const terminalSides = data.terminalSides || {};
+
+  // Group terminals by their actual side
+  const bySide = { top: [], bottom: [], left: [], right: [] };
+  terminals?.forEach(t => {
+    const side = terminalSides[t.id] || defaultSide;
+    bySide[side].push(t);
+  });
+
+  const getTerminalLayout = (terminal) => {
+    const side = terminalSides[terminal.id] || defaultSide;
+    const group = bySide[side];
+    const idx = group.findIndex(t => t.id === terminal.id);
+    const isHorizontal = side === 'top' || side === 'bottom';
+    let pos;
+    if (isHorizontal) {
+      if (group.length === 1) pos = 80;
+      else if (group.length === 2) pos = 40 + idx * 80;
+      else if (group.length === 3) pos = 30 + idx * 50;
+      else pos = 40 + idx * 32;
+    } else {
+      if (group.length === 1) pos = 74;
+      else if (group.length === 2) pos = 44 + idx * 60;
+      else if (group.length === 3) pos = 34 + idx * 45;
+      else pos = 30 + idx * 32;
+    }
+    const handlePosition = side === 'top' ? Position.Top : side === 'bottom' ? Position.Bottom : side === 'left' ? Position.Left : Position.Right;
+    return { side, pos, isHorizontal, handlePosition };
+  };
+
+  // Terminal labels always spread horizontally across the top of the body
+  const getHandleLeft = (idx) => {
+    if (termCount === 1) return 80;
+    if (termCount === 2) return 40 + idx * 80;
+    if (termCount === 3) return 30 + idx * 50;
+    return 40 + idx * 32;
+  };
 
   return (
-    <div className="acad-node sensor-node-acad">
-      {/* Node header with reference designator */}
+    <div className="acad-node sensor-node-acad" style={{ width: '160px', position: 'relative' }}>
+      {/* Terminal pins — outside the card */}
+      {terminals && terminals.map((terminal) => {
+        const { side, pos, isHorizontal, handlePosition } = getTerminalLayout(terminal);
+        return (
+          <div key={`pin-${terminal.id}`}>
+            {/* Dot sitting outside the card */}
+            <div style={{
+              position: 'absolute',
+              ...(isHorizontal
+                ? { left: `${pos - 5}px`, [side]: '-14px' }
+                : { [side]: '-14px', top: `${pos - 5}px` }
+              ),
+              width: '10px',
+              height: '10px',
+              borderRadius: '50%',
+              backgroundColor: terminal.color,
+              border: '1px solid var(--border-color)'
+            }} />
+            {/* Invisible React Flow Handle — wire lands here */}
+            <Handle
+              type={isPowerSource ? 'source' : 'target'}
+              position={handlePosition}
+              id={terminal.id}
+              style={{
+                position: 'absolute',
+                ...(isHorizontal
+                  ? { [side]: -14, left: pos }
+                  : { [side]: -14, top: pos }
+                ),
+                opacity: 0,
+                width: '12px',
+                height: '12px',
+                zIndex: 10
+              }}
+            />
+          </div>
+        );
+      })}
+
+      {/* Header */}
       <div className="acad-node-header">
         <span className="acad-ref-des">{refDes}1</span>
         <span className="acad-device-type">{description.toUpperCase()}</span>
       </div>
 
-      <div className="acad-node-body">
-        {/* IEC-style sensor symbol - larger for better spacing */}
-        <svg width="160" height="120" viewBox="0 0 160 120">
-          {/* Device outline - rectangle with chamfered corners */}
-          <path 
-            d="M 40 20 L 120 20 L 125 25 L 125 85 L 120 90 L 40 90 L 35 85 L 35 25 Z" 
-            fill="var(--bg-primary)" 
-            stroke="var(--text-primary)" 
-            strokeWidth="1.5"
-          />
+      {/* Body */}
+      <div style={{
+        background: 'var(--bg-secondary)',
+        height: '100px',
+        position: 'relative',
+        display: 'flex'
+      }}>
+        {/* Terminal labels inside the body */}
+        {terminals && terminals.map((terminal, idx) => {
+          const leftPos = getHandleLeft(idx);
+          return (
+            <div key={`label-${idx}`} style={{
+              position: 'absolute',
+              left: `${leftPos - 12}px`,
+              top: '4px',
+              fontSize: '8px',
+              color: 'var(--text-secondary)',
+              lineHeight: '10px',
+              fontFamily: "'Consolas', 'Monaco', monospace",
+              textAlign: 'center',
+              width: '24px'
+            }}>
+              {terminal.name}
+            </div>
+          );
+        })}
 
-          {/* Sensor type symbol in center */}
-          {sensorType === '0-10v' || sensorType === '4-20ma' || sensorType === 'voltage-sensing' ? (
-            // Analog sensor - sine wave symbol
-            <g>
-              <path 
-                d="M 55 55 Q 70 35 85 55 Q 100 75 115 55" 
-                fill="none" 
-                stroke="var(--accent-color)" 
-                strokeWidth="2.5"
-              />
-              <text x="85" y="75" fill="var(--accent-color)" fontSize="11" textAnchor="middle" fontFamily="Consolas,monospace">
-                {sensorSymbol}
-              </text>
-            </g>
-          ) : sensorType === 'power-input' ? (
-            // Power supply - DC symbol
-            <g>
-              <rect x="70" y="40" width="40" height="35" fill="none" stroke="var(--accent-color)" strokeWidth="2"/>
-              <text x="90" y="62" fill="var(--accent-color)" fontSize="16" textAnchor="middle" fontFamily="Consolas,monospace" fontWeight="bold">
-                DC
-              </text>
-            </g>
-          ) : sensorType === 'pulse' ? (
-            // Pulse counter - square wave
-            <g>
-              <polyline 
-                points="60,60 68,60 68,45 82,45 82,60 96,60 96,45 110,45 110,60 118,60" 
-                fill="none" 
-                stroke="var(--accent-color)" 
-                strokeWidth="2.5"
-              />
-              <text x="89" y="82" fill="var(--accent-color)" fontSize="10" textAnchor="middle" fontFamily="Consolas,monospace">
-                PULSE
-              </text>
-            </g>
-          ) : (
-            // Digital/Communication - generic box with label
-            <g>
-              <rect x="60" y="40" width="60" height="35" fill="none" stroke="var(--accent-color)" strokeWidth="2"/>
-              <text x="90" y="62" fill="var(--accent-color)" fontSize="11" textAnchor="middle" fontFamily="Consolas,monospace">
-                {sensorSymbol}
-              </text>
-            </g>
-          )}
+        {/* Center symbol rectangle */}
+        <div style={{
+          position: 'absolute',
+          left: '8px',
+          right: '8px',
+          top: '20px',
+          bottom: '6px',
+          border: '1px solid var(--border-secondary)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <span style={{
+            fontSize: symbolFontSize,
+            fontWeight: 'bold',
+            color: bodyTextColor,
+            fontFamily: "'Consolas', 'Monaco', monospace"
+          }}>
+            {centerSymbol}
+          </span>
+        </div>
 
-          {/* Terminal labels on left side - with more spacing */}
-          {terminals && terminals.map((terminal, idx) => {
-            const yPos = 35 + (idx * 28);
-            return (
-              <g key={idx}>
-                {/* Terminal circle */}
-                <circle cx="22" cy={yPos} r="5" fill={terminal.color} stroke="var(--border-color)" strokeWidth="1"/>
-                {/* Terminal label */}
-                <text x="10" y={yPos + 3} fill="var(--text-secondary)" fontSize="9" textAnchor="end" fontFamily="Consolas,monospace">
-                  {terminal.name}
-                </text>
-                {/* Connection line */}
-                <line x1="27" y1={yPos} x2="35" y2={yPos} stroke="var(--border-secondary)" strokeWidth="1"/>
-              </g>
-            );
-          })}
-        </svg>
-
-        {/* Device label below */}
-        <div className="acad-node-title" style={{ marginTop: '-5px', fontSize: '10px' }}>
+        {/* Device label */}
+        <div style={{
+          position: 'absolute',
+          left: '8px',
+          right: '8px',
+          bottom: '2px',
+          fontSize: '9px',
+          color: 'var(--text-primary)',
+          textAlign: 'center',
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+          fontWeight: 600,
+          fontFamily: "'Consolas', 'Monaco', monospace",
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis'
+        }}>
           {label}
         </div>
       </div>
 
-      {/* Terminal strip footer */}
-      <div style={{ 
-        borderTop: '1px solid var(--border-secondary)', 
-        padding: '4px 8px',
-        fontSize: '9px',
-        fontFamily: 'Consolas,monospace',
-        color: 'var(--text-muted)',
-        display: 'flex',
-        justifyContent: 'space-between'
-      }}>
+      {/* Footer */}
+      <div className="acad-node-footer">
         <span>TB{refDes}1</span>
         <span>{terminals?.length || 0}P</span>
       </div>
-
-      {/* React Flow Handles - AutoCAD grip style with more spacing */}
-      {terminals && terminals.map((terminal, idx) => {
-        const topPos = 40 + (idx * 32);
-
-        return (
-          <Handle
-            key={idx}
-            type={isPowerSource ? 'source' : 'target'}
-            position={isPowerSource ? Position.Right : Position.Left}
-            id={terminal.id}
-            style={{
-              [isPowerSource ? 'right' : 'left']: -6,
-              top: topPos,
-              backgroundColor: terminal.color,
-              border: '2px solid var(--accent-color)',
-              width: '12px',
-              height: '12px',
-              zIndex: 10
-            }}
-          />
-        );
-      })}
     </div>
   );
 };

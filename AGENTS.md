@@ -1,121 +1,160 @@
 # Neo Wiring Tool - Agent Reference
 
 ## Project Overview
-A React-based PWA (Progressive Web App) for visualizing and designing wiring configurations for Neo devices. The app has two main sections:
-1. **Wiring Lookup** (`/`) - Quick reference for pin configurations based on plug type and device
-2. **System Wiring** (`/system`) - Interactive diagram designer for complete system layouts
+
+A React-based PWA (Progressive Web App) for visualizing and designing wiring configurations for Aquamonix Neo IoT devices. The app provides two primary workflows:
+
+1. **Wiring Lookup** (`/`) — Quick reference tool for pin configurations based on plug type and device selection. Shows interactive pin tables, color legends, and ReactFlow wiring diagrams for a single device.
+2. **System Wiring** (`/system`) — Interactive diagram designer for complete system layouts. Users can add multiple devices, configure channels/outputs, and export BOMs, wiring schedules, and PDF reports.
+
+The visual design follows an **AutoCAD Electrical** aesthetic: dark theme by default (black backgrounds, cyan accents), monospace fonts (`Consolas`, `Monaco`), IEC-style schematic symbols, and wire number labels.
+
+The current application version is **1.2.1** (declared in `index.html` meta tag).
+
+A hardware reference manual (`NEO_Hardware_Manual.md`) is also present in the repository with full connector pinouts and installation instructions.
 
 ## Tech Stack
-- React 19 + Vite 7
-- ReactFlow 11 (for interactive diagrams)
-- react-router-dom (client-side routing)
-- html-to-image (for PNG export)
-- PWA support via vite-plugin-pwa
 
-## Recent Features Implemented
+| Technology | Version | Purpose |
+|---|---|---|
+| React | ^19.2.0 | UI framework |
+| React DOM | ^19.2.0 | DOM renderer |
+| Vite | ^7.2.4 | Build tool & dev server |
+| @vitejs/plugin-react-swc | ^4.2.2 | Fast JSX transform (SWC) |
+| ReactFlow | ^11.11.4 | Interactive node-based diagrams |
+| react-router-dom | ^7.13.0 | Client-side routing (`/`, `/system`) |
+| html-to-image | ^1.11.13 | PNG/SVG export of diagrams |
+| jspdf | ^4.1.0 | PDF report generation |
+| jspdf-autotable | ^5.0.7 | PDF table rendering |
+| vite-plugin-pwa | ^1.2.0 | PWA manifest & service worker |
 
-### 1. Light/Dark Theme Support
-- CSS variables for theming (`--bg-primary`, `--text-primary`, etc.)
-- Theme toggle in navigation (☀️/🌙)
-- Persisted in localStorage
-- Files: `ThemeContext.jsx`, `index.css`
+**Unused dependencies:**
+- `html2canvas` (^1.4.1) is listed in `package.json` but is **not imported anywhere** in the source code; all image exports use `html-to-image`.
+- `elkjs` (^0.11.1) is listed in `package.json` but is **not imported anywhere** in the source code. The system diagram uses a deterministic manual layout instead of ELK.js.
 
-### 2. 2-Wire / 3-Wire Configuration (Input Sensors)
-- **2-wire**: Signal + Power only (no GND/Pin 4)
-- **3-wire**: Signal + Power + GND (standard)
-- Dropdown in Device Config Panel
-- Wiring diagram updates dynamically
-- GND edge/terminal hidden in 2-wire mode
-- Applies to: Wiring Lookup, System Wiring, Device Config Panel
+## Build Commands
 
-### 3. Image Export (System Wiring)
-- PNG export of the diagram
-- Hides UI overlays (buttons, controls, minimap)
-- Uses html-to-image library
-- White background for light mode, dark for dark mode
-- Known issue: Cables behind nodes may not capture perfectly
+Defined in `package.json`:
 
-### 4. Auto-Assign Next Available Channel/Output
-- When adding devices, automatically finds next available channel/output
-- Warns about pin conflicts
+```bash
+npm run dev        # Start Vite dev server (host: true, accessible on network)
+npm run build      # Production build -> outputs to `dist/`
+npm run preview    # Preview the production build locally
+npm run lint       # Run ESLint across the project
+npm run deploy     # Deploy `dist/` to GitHub Pages via gh-pages
+```
 
-### 5. Device Name Editing
-- All node types show custom labels
-- Config panel has name input field
-
-### 6. Latching Relay Support
-- Separate node type with SET/RESET coils
-- Outputs labeled as "Out 1/2/3/4"
-
-### 7. Power Input (Battery) Nodes
-- Special node type for power supply
-- Cables labeled at battery side
-- Shifted 15px left to avoid overlap
-
-## File Structure
+## Project Structure
 
 ```
 src/
 ├── components/
 │   ├── edges/
-│   │   └── ColoredWireEdge.jsx    # Custom edge with labels
+│   │   └── ColoredWireEdge.jsx     # Custom ReactFlow edge with orthogonal routing, wire labels, wire numbers
 │   ├── nodes/
-│   │   ├── BatteryNode.jsx        # Power input nodes
-│   │   ├── LatchingRelayNode.jsx  # Latching relay nodes
-│   │   ├── NeoDeviceNode.jsx      # Neo M12 connector
-│   │   ├── RelayNode.jsx          # Standard relay
-│   │   └── SensorNode.jsx         # Sensors (0-10V, 4-20mA, etc.)
+│   │   ├── BatteryNode.jsx         # Power supply node (DC symbol, source handles)
+│   │   ├── LatchingRelayNode.jsx   # Latching relay with SET/RESET coils
+│   │   ├── NeoDeviceNode.jsx       # Neo M12 connector (terminal block table, 8 pins, dynamic handles)
+│   │   ├── RelayNode.jsx           # Standard relay (IEC coil symbol)
+│   │   └── SensorNode.jsx          # Generic sensor/comm device (IEC symbol per type)
 │   ├── system/
-│   │   ├── DeviceConfigPanel.jsx  # Right sidebar config
-│   │   ├── DevicePalette.jsx      # Left sidebar device list
-│   │   └── PinUsageSummary.jsx    # Pin conflict display
-│   ├── Navigation.jsx             # (if exists)
-│   ├── PlugDisplay.jsx            # Wiring Lookup pin table
-│   ├── ReactFlowDiagram.jsx       # Wiring Lookup diagram
-│   └── WiringDiagram.jsx          # (legacy?)
+│   │   ├── DeviceConfigPanel.jsx   # Right sidebar: edit name, channel, output, wire mode, wire numbers
+│   │   ├── DevicePalette.jsx       # Left sidebar: click-to-add device categories
+│   │   └── PinUsageSummary.jsx     # Right sidebar: pin conflict display, per-plug usage
+│   ├── PlugDisplay.jsx             # Wiring Lookup pin table (color-coded rows, pulse counter dual-plug)
+│   ├── ReactFlowDiagram.jsx        # Wiring Lookup interactive diagram (single-device view)
+│   └── WiringDiagram.jsx           # Legacy static wiring diagram (HTML/CSS based)
 ├── context/
-│   └── ThemeContext.jsx           # Dark/light theme state
+│   └── ThemeContext.jsx            # Dark/light theme state, persisted to localStorage (`neo-wiring-theme`)
 ├── data/
-│   └── plugData.js               # Pin configurations, colors
+│   └── plugData.js                 # Pin configurations, colors, device info for all plug types
 ├── pages/
-│   ├── SystemWiring.jsx          # Main system designer page
-│   ├── SystemWiring.css          # Styles for system page
-│   └── App.jsx                   # Wiring Lookup page
-├── App.css                       # Global styles
-├── index.css                     # CSS variables, theme styles
-└── main.jsx                      # App entry, router setup
+│   ├── SystemWiring.jsx            # Main system designer page (ReactFlow canvas, export logic)
+│   └── SystemWiring.css            # AutoCAD-style styles for system page
+├── utils/                          # Empty directory (reserved for future helpers)
+├── App.jsx                         # Wiring Lookup page
+├── App.css                         # Wiring Lookup styles + ReactFlow overrides
+├── index.css                       # CSS variables for theming, global AutoCAD styles
+└── main.jsx                        # Entry point: StrictMode, ThemeProvider, BrowserRouter, Navigation
 ```
 
-## Key Data Structures
+## Routing
 
-### Device Object (System Wiring)
+Configured in `main.jsx` via `react-router-dom`:
+
+```jsx
+<BrowserRouter>
+  <Routes>
+    <Route path="/" element={<Layout><App /></Layout>} />
+    <Route path="/system" element={<Layout><SystemWiring /></Layout>} />
+  </Routes>
+</BrowserRouter>
+```
+
+Both routes share a common `Layout` with the `Navigation` component (brand, route links, theme toggle ☀️/🌙).
+
+## Data Architecture
+
+### Wiring Lookup (`App.jsx`)
+- Local `useState` manages dropdown selections (`selectedPlug`, `selectedType`, `selectedOutput`, `selectedChannel`, `wireMode`).
+- `plugData.js` provides static configuration for all plug types, pins, and connection instructions.
+- `getUsedPins()` filters which pins are active for the current selection.
+
+### System Wiring (`SystemWiring.jsx`)
+- **`connectedDevices`** is the **single source of truth** (array of device objects).
+- **Nodes and edges** are derived from `connectedDevices` via `useEffect`. This allows save/load as simple JSON.
+- Pure helper functions (`getUsedPins`, `getDeviceTerminals`, `createEdgesForDevice`, `findNextAvailable`, `generateDefaultWireNumber`) are defined **outside the component** to avoid React hook ordering issues (TDZ errors in production builds).
+
+#### Device Object Schema
 ```javascript
 {
   id: 'device-1234567890',
-  type: '0-10v',           // or '4-20ma', 'relay', 'latching', etc.
+  type: '0-10v',           // '0-10v', '4-20ma', 'relay', 'latching', 'rs485', etc.
   plugType: 'inputs',      // 'inputs', 'outputs', 'communications'
   label: 'My Sensor',
   channel: 1,              // for inputs
   output: 2,               // for outputs
   input: 1,                // for pulse counter
   wireMode: '3-wire',      // '2-wire' or '3-wire' (inputs only)
-  powerSource: 'Solar'     // or 'PSU'
+  powerSource: 'Solar',    // or 'PSU'
+  wireNumbers: { signal: '201', power: '103', gnd: '102' }  // optional custom wire numbers
+  handleSide: 'bottom',     // 'top', 'bottom', 'left', 'right' — default side for all device handles
+  terminalSides: {}         // per-terminal overrides, e.g. { 'a1': 'top', 'a2': 'bottom' }
 }
 ```
 
-### Pin Map (Inputs)
-- Channel 1 → Pin 8 (Red)
-- Channel 2 → Pin 7 (Blue)
-- Channel 3 → Pin 6 (Pink)
-- Channel 4 → Pin 5 (Grey)
+#### Neo System Node IDs
+- `neo-inputs` — Inputs plug (left side of canvas, y=50)
+- `neo-comms` — Communications plug (y=450)
+- `neo-outputs` — Outputs plug (y=850)
 
-### Pin Map (Outputs)
-- Output 1 → Pin 5 (Grey) / A1
-- Output 2 → Pin 6 (Pink) / A2
-- Output 3 → Pin 7 (Blue) / A3
-- Output 4 → Pin 8 (Red) / A4
+### Pin Maps
 
-### Color Map
+**Inputs (Analog Channels)**
+| Channel | Pin | Color |
+|---|---|---|
+| 1 | 8 | Red |
+| 2 | 7 | Blue |
+| 3 | 6 | Pink |
+| 4 | 5 | Grey |
+
+**Outputs**
+| Output | Pin | Color | Terminal |
+|---|---|---|---|
+| 1 | 5 | Grey | A1 |
+| 2 | 6 | Pink | A2 |
+| 3 | 7 | Blue | A3 |
+| 4 | 8 | Red | A4 |
+
+**Communications**
+| Type | Pins | Colors |
+|---|---|---|
+| RS485 | 3, 4 | Green (B), Yellow (A) |
+| Wiegand | 6, 5 | Pink (D0), Grey (D1) |
+| SDI-12 | 7, 8 | Blue (Data), Red (GND) |
+| Pulse | 6 (or 5), 3, 4 | Pink/Grey (Signal), Green (Power), Yellow (GND) |
+
+**Color Map**
 ```javascript
 const colorMap = {
   white: '#FFFFFF',
@@ -129,113 +168,155 @@ const colorMap = {
 };
 ```
 
-## Known Issues / TODOs
+## Node Types
 
-### High Priority
-1. **Image Export Missing Cables**
-   - Cables behind nodes don't always render in PNG export
-   - Tried: toSvg instead of toPng, foreignObjectRendering, various delays
-   - May need to try: dom-to-image-more, or manual canvas drawing
+Registered in `SystemWiring.jsx`:
 
-2. **Pin Conflict Detection**
-   - Currently recalculates on every connectedDevices change
-   - May have edge cases with latching relays
+| Type | Component | Used For |
+|---|---|---|
+| `neoDevice` | `NeoDeviceNode` | Neo M12 connectors (system nodes) |
+| `sensor` | `SensorNode` | Input sensors, comm devices, power input |
+| `relay` | `RelayNode` | Standard relays, transistor outputs |
+| `latchingRelay` | `LatchingRelayNode` | Latching relays |
+| `battery` | `BatteryNode` | Power supply / battery nodes |
 
-### Medium Priority
-3. **Wire Mode UI Consistency**
-   - Wiring Lookup: Shows wire mode dropdown only for inputs
-   - System Wiring: Shows in Device Config Panel
-   - Should verify both work correctly
+## Edge Types
 
-4. **Node Positioning**
-   - Power input nodes shifted 15px left (x=385 vs x=400)
-   - May need adjustment for different screen sizes
+- **`coloredWire`** (`ColoredWireEdge.jsx`): Custom ReactFlow edge featuring:
+  - Orthogonal path routing (left-to-right, right-to-left, same-side loops)
+  - Cable-colored stroke with background-colored outline for visibility
+  - AutoCAD-style labels with optional wire numbers (black background, yellow text)
+  - ArrowClosed markers colored to match the cable
+  - Theme-aware styling (white wires get black borders in light mode)
+  - Small vertical offset per wire color so parallel cables do not perfectly overlap
 
-### Low Priority / Nice to Have
-5. **Export Improvements**
-   - Add PDF export option
-   - Add wiring schedule/report generation
+## Features Implemented
 
-6. **Undo/Redo**
-   - No undo support for device additions/removals
+### Theme Support
+- CSS variables (`--bg-primary`, `--text-primary`, `--accent-color`, etc.) defined in `index.css`
+- `data-theme="light"` attribute on `<body>` toggled via `ThemeContext`
+- Persisted in `localStorage` key `neo-wiring-theme`
+- Default: dark (AutoCAD black background)
 
-7. **Drag and Drop**
-   - Currently palette is click-to-add
-   - Could support drag from palette to diagram
+### 2-Wire / 3-Wire Mode
+- Applies to input sensors only.
+- **2-wire**: Signal + Power only (no GND/Pin 4).
+- **3-wire**: Signal + Power + GND (standard).
+- In System Wiring, `wireMode` is stored on the device object and affects terminal generation, edge creation, and pin conflict calculation.
 
-## Architecture Decisions
+### Image Export (System Wiring)
+- Uses `html-to-image` `toSvg()` to capture the ReactFlow canvas.
+- Hides UI overlays (buttons, controls, minimap, attribution) during capture.
+- Converts SVG to PNG via canvas at 2x scale.
+- Background color adapts to current theme.
 
-### 1. Pure Functions Outside Component
-Helper functions like `getDeviceTerminals()` and `createEdgesForDevice()` are defined outside the SystemWiring component to avoid React hook ordering issues (TDZ errors in production builds).
+### PDF Export (System Wiring)
+- Uses `jspdf` + `jspdf-autotable`.
+- Landscape A4 orientation for BOM table and Connection Schedule.
+- Portrait A4 orientation for the Wiring Diagram image.
+- Multi-page report: BOM table → Connection Schedule → Wiring Diagram image.
 
-### 2. connectedDevices as Source of Truth
-The `connectedDevices` array is the primary state. Nodes and edges are derived from it via useEffect. This allows:
-- Easy save/load of designs (just JSON)
-- Consistent state across diagram and sidebar
+### CSV Export (System Wiring)
+- Generates `neo_wiring_schedule.csv` with device name, type, plug, and connection details.
 
-### 3. Node IDs
-- Neo device nodes: `neo-inputs`, `neo-outputs`, `neo-comms`
-- Device nodes: `device-${timestamp}`
+### Save / Load Design
+- JSON export/import of the `connectedDevices` array.
+- Legacy devices without `wireMode` get a default assignment on load.
 
-### 4. Edge Type
-All edges use `type: 'coloredWire'` which is a custom edge component that:
-- Routes around nodes (not through them)
-- Shows labels at appropriate positions
-- Uses cable colors for stroke
+### Auto-Assign Next Available Channel/Output
+- `findNextAvailable()` scans `connectedDevices` to suggest an unused channel/output.
+- Bus types (`rs485`, `sdi12`, `wiegand`) skip conflict checking by design (multi-drop).
 
-## Deployment
+### Pin Conflict Detection
+- Recalculates whenever `connectedDevices` changes.
+- Signal pins are tracked per `plugType + pin`.
+- Power pins (3, 4) are tracked per plug but treated as shared bus.
+- Bus types allow multiple devices on the same signal pins without conflict.
 
-### GitHub Pages (Recommended)
-```bash
-# Uncomment base in vite.config.js
-base: '/NEO_Wirering_Tool/',
+### Device Name Editing
+- All node types display custom labels.
+- `DeviceConfigPanel` provides a name input field.
 
-npm run build
-npm run deploy
-```
+### Wire Number Editing
+- Each connection edge has an editable wire number in the config panel.
+- Defaults are generated per edge type via `generateDefaultWireNumber()`:
+  - `vcc` → `101`, `gnd` → `102`, `power` → `103`, `signal` → `200 + channel`
+  - `a1` → `300 + output`, `a2` → `400 + output`
+  - `a` → `501`, `b` → `502`, `d0` → `601`, `d1` → `602`, `data` → `701`
+- Stored in `device.wireNumbers` object.
 
-### Local Testing
-```bash
-npm run dev
-# or
-npm run build
-npx serve -s dist
-```
+## Code Style Guidelines
 
-## Common Tasks
+- **ES Modules** throughout (`"type": "module"` in `package.json`).
+- **JSX files** use `.jsx` extension.
+- **Pure helper functions** that derive nodes/edges from device state are defined **outside React components** to avoid hook ordering issues (e.g. `getUsedPins`, `getDeviceTerminals`, `createEdgesForDevice`).
+- **CSS variables** are used for all theme-dependent colors; never hardcode theme colors in components.
+- **Monospace fonts** (`Consolas`, `Monaco`) for technical/AutoCAD-style text.
+- **Uppercase text transforms** for headers, buttons, and panel titles to match AutoCAD UI conventions.
+- **All comments and documentation are written in English.**
 
-### Adding a New Device Type
-1. Add to `availableDevices` array in `SystemWiring.jsx`
-2. Add pin mapping in `getUsedPins()`
-3. Add terminal config in `getDeviceTerminals()`
-4. Add edge creation in `createEdgesForDevice()`
-5. Add node type if needed (in `nodeTypes` object)
+## ESLint Configuration
 
-### Changing Cable Label Position
-Edit `ColoredWireEdge.jsx`:
-- `shiftedX` calculation controls label position
-- Currently offset by -55 or +35 pixels
+Flat config (`eslint.config.js`):
+- `@eslint/js` recommended rules
+- `eslint-plugin-react-hooks` recommended
+- `eslint-plugin-react-refresh` Vite config
+- Browser globals via `globals`
+- Custom rule: `'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }]` (allows PascalCase for type-like vars)
+- `dist/` is ignored via `globalIgnores`.
 
-### Adding New Theme Colors
-1. Add CSS variable in `index.css` (both :root and [data-theme="light"])
-2. Use `var(--variable-name)` in component styles
+## Testing
 
-## Testing Checklist
+There is **no automated test suite** currently in the project. No Jest, Vitest, Cypress, or Playwright configurations are present. Testing is entirely manual.
 
-Before releasing:
+### Manual Testing Checklist
 - [ ] Test light mode export (white background)
 - [ ] Test dark mode export (dark background)
 - [ ] Test 2-wire mode (GND hidden)
 - [ ] Test 3-wire mode (GND shown)
 - [ ] Test pin conflict detection
-- [ ] Test save/load design
+- [ ] Test save/load design (JSON)
 - [ ] Test CSV export
-- [ ] Test all device types: 0-10V, 4-20mA, relay, latching, RS485, etc.
-- [ ] Test on mobile (PWA)
+- [ ] Test PDF export
+- [ ] Test all device types: 0-10V, 4-20mA, voltage-sensing, relay, latching, transistor, RS485, Wiegand, SDI-12, pulse counter, power-input
+- [ ] Test on mobile (PWA installability)
+
+## Deployment
+
+### Netlify (Configured)
+- `netlify.toml` is present with SPA redirect rules (`/*` → `/index.html`).
+- Build command: `npm run build`
+- Publish directory: `dist`
+- JavaScript/CSS content-type headers are explicitly set for `.js`, `.mjs`, and `.css` files.
+
+### GitHub Pages
+- Uncomment `base: '/NEO_Wirering_Tool/'` in `vite.config.js`.
+- Run `npm run build` then `npm run deploy`.
+
+### Local Testing
+```bash
+npm run dev        # Vite dev server with HMR
+npm run build      # Build for production
+npx serve -s dist  # Serve the static build
+```
+
+## Adding a New Device Type
+
+1. Add the device template to `availableDevices` in `SystemWiring.jsx`.
+2. Add pin mapping in `getUsedPins()` in `SystemWiring.jsx`.
+3. Add terminal config in `getDeviceTerminals()` in `SystemWiring.jsx`.
+4. Add edge creation logic in `createEdgesForDevice()` in `SystemWiring.jsx`.
+5. If needed, add a new node component and register it in the `nodeTypes` object.
+6. Update `plugData.js` if the device should also appear in Wiring Lookup.
+
+## Security Considerations
+
+- This is a **pure client-side application** with no backend, authentication, or API keys.
+- No sensitive files are exposed in the repository.
+- PWA manifest and service worker are generated by `vite-plugin-pwa` at build time.
 
 ## Contact / Context
 
-This is a tool for Aquamonix Neo device wiring configuration.
-- GitHub: https://github.com/PartT1m3Cod3r/NEO_Wirering_Tool
-- Built by: Robert Steere
-- Last updated: 2026-01-28
+- **Purpose:** Tool for Aquamonix Neo device wiring configuration.
+- **Built by:** Robert Steere
+- **GitHub:** https://github.com/PartT1m3Cod3r/NEO_Wirering_Tool
