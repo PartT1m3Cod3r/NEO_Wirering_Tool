@@ -16,9 +16,9 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
       },
       manifest: {
-        name: 'Neo Wiring Lookup',
-        short_name: 'NeoWiring',
-        description: 'Lookup tool for Neo device wiring configurations',
+        name: 'Neo Tool Suite',
+        short_name: 'NeoTools',
+        description: 'Wiring and network design tools for Neo IoT devices',
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',

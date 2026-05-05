@@ -8,8 +8,10 @@ export const Navigation = () => {
     <nav className="main-nav">
       <div className="nav-brand">Neo Wiring Tool</div>
       <div className="nav-links">
-        <Link to="/" className="nav-link">Wiring Lookup</Link>
+        <Link to="/" className="nav-link">Home</Link>
+        <Link to="/wiring" className="nav-link">Wiring Lookup</Link>
         <Link to="/system" className="nav-link">System Wiring</Link>
+        <Link to="/network" className="nav-link">Network Designer</Link>
         <button
           className="theme-toggle"
           onClick={toggleTheme}

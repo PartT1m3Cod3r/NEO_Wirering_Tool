@@ -1,0 +1,446 @@
+/* ── Keyframes ─────────────────────────────────────────────────── */
+
+@keyframes lp-scan {
+  0%   { top: -2px; opacity: 0; }
+  4%   { opacity: 1; }
+  96%  { opacity: 0.6; }
+  100% { top: 100vh; opacity: 0; }
+}
+
+@keyframes lp-title-glow {
+  0%, 100% {
+    text-shadow:
+      0 0 20px rgba(0,255,255,0.5),
+      0 0 50px rgba(0,255,255,0.25);
+  }
+  50% {
+    text-shadow:
+      0 0 35px rgba(0,255,255,0.9),
+      0 0 80px rgba(0,255,255,0.5),
+      0 0 120px rgba(0,255,255,0.2);
+  }
+}
+
+@keyframes lp-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.15; }
+}
+
+@keyframes lp-card-sweep {
+  0%   { top: -4px; }
+  100% { top: calc(100% + 4px); }
+}
+
+@keyframes lp-fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes lp-suite-reveal {
+  from { opacity: 0; letter-spacing: 20px; }
+  to   { opacity: 1; letter-spacing: 10px; }
+}
+
+/* ── Page shell ────────────────────────────────────────────────── */
+
+.landing-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 50px);
+  padding: 2rem;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Consolas', 'Monaco', monospace;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Dot-grid background */
+.lp-grid {
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(0,255,255,0.09) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Full-page horizontal scan line */
+.lp-scan-line {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0,255,255,0.15) 20%,
+    rgba(0,255,255,0.7) 50%,
+    rgba(0,255,255,0.15) 80%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+  animation: lp-scan 9s linear infinite;
+  animation-delay: 1s;
+}
+
+/* ── Hero ──────────────────────────────────────────────────────── */
+
+.landing-hero {
+  text-align: center;
+  margin-bottom: 3.5rem;
+  position: relative;
+  z-index: 2;
+  animation: lp-fade-up 0.7s ease both;
+}
+
+/* Status pill */
+.lp-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.7rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #00cc66;
+  border: 1px solid rgba(0, 204, 102, 0.35);
+  padding: 4px 14px;
+  margin-bottom: 2rem;
+}
+
+.lp-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #00cc66;
+  box-shadow: 0 0 6px #00cc66;
+  animation: lp-blink 2s ease-in-out infinite;
+}
+
+/* Title block */
+.landing-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  margin-bottom: 1.5rem;
+  line-height: 1;
+}
+
+.lp-title-neo {
+  font-size: clamp(5rem, 14vw, 10rem);
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 16px;
+  text-transform: uppercase;
+  animation: lp-title-glow 3.5s ease-in-out infinite;
+}
+
+.lp-title-suite {
+  font-size: clamp(1.1rem, 3.5vw, 2rem);
+  font-weight: 700;
+  color: var(--accent-color);
+  letter-spacing: 10px;
+  text-transform: uppercase;
+  animation: lp-suite-reveal 1s ease 0.3s both;
+}
+
+.landing-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  letter-spacing: 1.5px;
+  max-width: 520px;
+  margin: 0 auto;
+  line-height: 1.6;
+  animation: lp-fade-up 0.7s ease 0.4s both;
+}
+
+/* ── Cards ─────────────────────────────────────────────────────── */
+
+.landing-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 1080px;
+  margin-bottom: 3rem;
+  position: relative;
+  z-index: 2;
+  animation: lp-fade-up 0.7s ease 0.2s both;
+}
+
+@media (min-width: 768px) {
+  .landing-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.landing-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  padding: 2rem 1.75rem 1.75rem;
+  border: 1px solid rgba(0,255,255,0.25);
+  background: linear-gradient(145deg, rgba(0,255,255,0.03) 0%, rgba(0,0,0,0) 60%);
+  color: var(--text-primary);
+  text-decoration: none;
+  overflow: hidden;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  min-height: 280px;
+}
+
+.landing-card:hover {
+  border-color: var(--accent-color);
+  box-shadow:
+    0 0 0 1px var(--accent-color),
+    0 0 30px rgba(0,255,255,0.15),
+    0 0 60px rgba(0,255,255,0.06);
+  transform: translateY(-5px);
+}
+
+/* Middle card — yellow accent */
+.lp-card-primary {
+  border-color: rgba(255,255,0,0.3);
+  background: linear-gradient(145deg, rgba(255,255,0,0.03) 0%, rgba(0,0,0,0) 60%);
+}
+
+.lp-card-primary:hover {
+  border-color: var(--accent-secondary);
+  box-shadow:
+    0 0 0 1px var(--accent-secondary),
+    0 0 30px rgba(255,255,0,0.15),
+    0 0 60px rgba(255,255,0,0.06);
+}
+
+/* Corner brackets */
+.lp-corner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  transition: width 0.2s ease, height 0.2s ease;
+}
+
+.lp-tl { top: 8px;  left: 8px;  border-top: 2px solid var(--accent-color); border-left: 2px solid var(--accent-color); }
+.lp-tr { top: 8px;  right: 8px; border-top: 2px solid var(--accent-color); border-right: 2px solid var(--accent-color); }
+.lp-bl { bottom: 8px; left: 8px;  border-bottom: 2px solid var(--accent-color); border-left: 2px solid var(--accent-color); }
+.lp-br { bottom: 8px; right: 8px; border-bottom: 2px solid var(--accent-color); border-right: 2px solid var(--accent-color); }
+
+.lp-card-primary .lp-corner {
+  border-color: var(--accent-secondary);
+}
+
+.landing-card:hover .lp-corner {
+  width: 20px;
+  height: 20px;
+}
+
+/* Number watermark */
+.lp-card-num {
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  font-size: 4.5rem;
+  font-weight: 900;
+  color: rgba(0,255,255,0.05);
+  letter-spacing: -4px;
+  user-select: none;
+  line-height: 1;
+  transition: color 0.25s ease;
+}
+
+.landing-card:hover .lp-card-num {
+  color: rgba(0,255,255,0.1);
+}
+
+.lp-card-primary .lp-card-num {
+  color: rgba(255,255,0,0.05);
+}
+
+.lp-card-primary:hover .lp-card-num {
+  color: rgba(255,255,0,0.1);
+}
+
+/* Sweep line — plays once per hover */
+.lp-card-sweep {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0,255,255,0.5),
+    transparent
+  );
+  top: -4px;
+  pointer-events: none;
+}
+
+.landing-card:hover .lp-card-sweep {
+  animation: lp-card-sweep 0.55s ease-out forwards;
+}
+
+.lp-card-primary .lp-card-sweep {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,0,0.5),
+    transparent
+  );
+}
+
+/* Icon badge */
+.lp-card-badge {
+  width: 58px;
+  height: 58px;
+  border: 1px solid rgba(0,255,255,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  margin-bottom: 1.25rem;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  flex-shrink: 0;
+}
+
+.landing-card:hover .lp-card-badge {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 14px rgba(0,255,255,0.2), inset 0 0 14px rgba(0,255,255,0.05);
+}
+
+.lp-card-primary .lp-card-badge {
+  border-color: rgba(255,255,0,0.3);
+}
+
+.lp-card-primary:hover .lp-card-badge {
+  border-color: var(--accent-secondary);
+  box-shadow: 0 0 14px rgba(255,255,0,0.2), inset 0 0 14px rgba(255,255,0,0.05);
+}
+
+/* Card text */
+.landing-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent-color);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  margin-bottom: 0.6rem;
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.lp-card-primary .landing-card-title {
+  color: var(--accent-secondary);
+}
+
+.landing-card-text {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  font-family: 'Consolas', 'Monaco', monospace;
+  flex: 1;
+  margin-bottom: 1.25rem;
+}
+
+/* CTA */
+.lp-card-cta {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: rgba(0,255,255,0.4);
+  text-transform: uppercase;
+  transition: color 0.2s ease, letter-spacing 0.2s ease;
+}
+
+.landing-card:hover .lp-card-cta {
+  color: var(--accent-color);
+  letter-spacing: 5px;
+}
+
+.lp-card-primary .lp-card-cta {
+  color: rgba(255,255,0,0.4);
+}
+
+.lp-card-primary:hover .lp-card-cta {
+  color: var(--accent-secondary);
+}
+
+/* ── Footer ────────────────────────────────────────────────────── */
+
+.landing-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  position: relative;
+  z-index: 2;
+}
+
+.lp-footer-sep {
+  color: var(--accent-color);
+  opacity: 0.5;
+}
+
+/* ── Light theme overrides ─────────────────────────────────────── */
+
+[data-theme="light"] .lp-grid {
+  background-image: radial-gradient(circle, rgba(0,102,204,0.08) 1px, transparent 1px);
+}
+
+[data-theme="light"] .lp-scan-line {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0,102,204,0.15) 20%,
+    rgba(0,102,204,0.55) 50%,
+    rgba(0,102,204,0.15) 80%,
+    transparent 100%
+  );
+}
+
+[data-theme="light"] .lp-title-neo {
+  color: #000000;
+  animation: none;
+  text-shadow: none;
+}
+
+[data-theme="light"] .lp-card-num {
+  color: rgba(0,102,204,0.06);
+}
+
+[data-theme="light"] .landing-card:hover .lp-card-num {
+  color: rgba(0,102,204,0.12);
+}
+
+[data-theme="light"] .lp-tl,
+[data-theme="light"] .lp-tr,
+[data-theme="light"] .lp-bl,
+[data-theme="light"] .lp-br {
+  border-color: var(--accent-color);
+}
+
+[data-theme="light"] .lp-card-sweep {
+  background: linear-gradient(90deg, transparent, rgba(0,102,204,0.4), transparent);
+}
+
+[data-theme="light"] .lp-card-primary .lp-card-sweep {
+  background: linear-gradient(90deg, transparent, rgba(204,102,0,0.4), transparent);
+}
+
+[data-theme="light"] .lp-status {
+  color: #008844;
+  border-color: rgba(0,136,68,0.4);
+}
+
+[data-theme="light"] .lp-status-dot {
+  background: #008844;
+  box-shadow: 0 0 6px #008844;
+}

@@ -1,0 +1,217 @@
+/* AutoCAD Electrical Style - Network Designer Page */
+
+.network-designer-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 50px);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.network-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Device Palette - Left sidebar */
+.network-palette {
+  width: 220px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-secondary);
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.network-palette h3 {
+  margin: 0 0 12px 0;
+  color: var(--accent-color);
+  font-size: 0.95rem;
+  font-family: 'Consolas', 'Monaco', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--border-secondary);
+  padding-bottom: 8px;
+}
+
+.palette-btn {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.palette-btn:hover {
+  background: var(--hover-bg);
+  border-color: var(--accent-color);
+}
+
+.palette-btn:active {
+  background: var(--accent-color);
+  color: var(--bg-primary);
+}
+
+/* Diagram Container - Center canvas */
+.network-diagram-container {
+  flex: 1;
+  position: relative;
+  background: var(--bg-primary);
+}
+
+/* Export Buttons - Floating top-right */
+.network-export-buttons {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  padding: 8px;
+}
+
+.network-export-buttons .action-btn {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border-secondary);
+}
+
+.network-export-buttons .action-btn:hover {
+  border-color: var(--accent-color);
+}
+
+/* Config Sidebar - Right sidebar */
+.network-config-sidebar {
+  width: 320px;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-secondary);
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.config-panel h3 {
+  margin: 0 0 12px 0;
+  color: var(--accent-color);
+  font-size: 0.95rem;
+  font-family: 'Consolas', 'Monaco', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--border-secondary);
+  padding-bottom: 8px;
+}
+
+.config-section {
+  margin-bottom: 15px;
+}
+
+.config-section label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-family: 'Consolas', 'Monaco', monospace;
+  text-transform: uppercase;
+}
+
+.config-section input[type="text"],
+.config-section input[type="number"] {
+  width: 100%;
+  padding: 8px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-primary);
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.85rem;
+}
+
+.config-section input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 1px var(--accent-color);
+}
+
+.config-actions {
+  margin-top: 15px;
+}
+
+.btn-remove {
+  width: 100%;
+  padding: 10px;
+  background: var(--error-bg);
+  border: 1px solid var(--error-color);
+  color: var(--error-color);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: 'Consolas', 'Monaco', monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.btn-remove:hover {
+  background: var(--error-color);
+  color: var(--bg-primary);
+}
+
+/* Scrollbar styling - AutoCAD dark */
+.network-palette::-webkit-scrollbar,
+.network-config-sidebar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.network-palette::-webkit-scrollbar-track,
+.network-config-sidebar::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+  border-left: 1px solid var(--border-secondary);
+}
+
+.network-palette::-webkit-scrollbar-thumb,
+.network-config-sidebar::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border: 1px solid var(--border-tertiary);
+}
+
+.network-palette::-webkit-scrollbar-thumb:hover,
+.network-config-sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-color);
+}
+
+/* Handle styling - AutoCAD grip style */
+.react-flow__handle {
+  width: 10px;
+  height: 10px;
+  background: var(--bg-primary);
+  border: 2px solid var(--accent-color);
+}
+
+.react-flow__handle:hover {
+  background: var(--accent-color);
+  box-shadow: 0 0 8px var(--accent-color);
+}
+
+/* Edge labels */
+.react-flow__edge-label {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 10px;
+}
+
+.react-flow__edge-label > div {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-secondary);
+  padding: 2px 6px;
+  color: var(--accent-secondary);
+}
