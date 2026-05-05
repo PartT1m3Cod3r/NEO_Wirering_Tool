@@ -151,24 +151,42 @@
 }
 
 .system-header {
-  padding: 15px 25px;
+  padding: 12px 25px;
   background: var(--bg-secondary);
-  border-bottom: 2px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 1px 0 var(--border-color), 0 4px 20px rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.system-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .system-header h1 {
-  margin: 0 0 6px 0;
+  margin: 0;
   color: var(--accent-color);
-  font-size: 1.4rem;
+  font-size: 1.1rem;
   font-family: 'Consolas', 'Monaco', monospace;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 3px;
+  text-shadow: 0 0 14px rgba(0,255,255,0.35);
+}
+
+[data-theme="light"] .system-header h1 {
+  text-shadow: none;
 }
 
 .system-header p {
   margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-family: 'Consolas', 'Monaco', monospace;
+  letter-spacing: 0.5px;
 }
 
 .system-layout {
@@ -177,47 +195,52 @@
   overflow: hidden;
 }
 
-/* Device Palette - AutoCAD panel style */
+/* Device Palette */
 .device-palette {
   width: 260px;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border-secondary);
-  padding: 15px;
+  padding: 14px;
   overflow-y: auto;
 }
 
 .device-palette h3 {
-  margin: 0 0 8px 0;
+  margin: 0 0 10px 0;
   color: var(--accent-color);
-  font-size: 0.95rem;
+  font-size: 0.78rem;
   font-family: 'Consolas', 'Monaco', monospace;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   border-bottom: 1px solid var(--border-secondary);
   padding-bottom: 8px;
+  text-shadow: 0 0 10px rgba(0,255,255,0.3);
+}
+
+[data-theme="light"] .device-palette h3 {
+  text-shadow: none;
 }
 
 .palette-hint {
-  margin: 0 0 15px 0;
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  font-style: italic;
+  margin: 0 0 14px 0;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-family: 'Consolas', 'Monaco', monospace;
 }
 
 .device-category {
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .device-category h4 {
   margin: 0 0 8px 0;
   color: var(--text-secondary);
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   font-family: 'Consolas', 'Monaco', monospace;
   background: var(--bg-primary);
   padding: 4px 8px;
-  border-left: 3px solid var(--accent-color);
+  border-left: 2px solid var(--accent-color);
 }
 
 .device-list {
@@ -226,24 +249,26 @@
   gap: 6px;
 }
 
-/* AutoCAD button style for devices */
 .device-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 9px 12px;
   background: var(--bg-primary);
   border: 1px solid var(--border-secondary);
-  color: var(--text-primary);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.15s ease;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
+  font-family: 'Consolas', 'Monaco', monospace;
 }
 
 .device-item:hover {
   background: var(--hover-bg);
   border-color: var(--accent-color);
+  color: var(--accent-color);
   transform: translateX(3px);
+  box-shadow: inset 2px 0 0 var(--accent-color);
 }
 
 .device-item:active {
@@ -283,9 +308,8 @@
   letter-spacing: 1px;
 }
 
-/* Config Sidebar - AutoCAD properties panel */
 .config-sidebar {
-  width: 280px;
+  width: 290px;
   background: var(--bg-secondary);
   border-left: 1px solid var(--border-secondary);
   overflow-y: auto;
@@ -295,24 +319,31 @@
 
 /* Device Config Panel */
 .device-config-panel {
-  padding: 15px;
+  padding: 14px;
   border-bottom: 1px solid var(--border-secondary);
 }
 
 .device-config-panel.empty {
   text-align: center;
-  color: var(--text-secondary);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-family: 'Consolas', 'Monaco', monospace;
 }
 
 .device-config-panel h3 {
   margin: 0 0 12px 0;
   color: var(--accent-color);
-  font-size: 0.95rem;
+  font-size: 0.78rem;
   font-family: 'Consolas', 'Monaco', monospace;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   border-bottom: 1px solid var(--border-secondary);
   padding-bottom: 8px;
+  text-shadow: 0 0 10px rgba(0,255,255,0.3);
+}
+
+[data-theme="light"] .device-config-panel h3 {
+  text-shadow: none;
 }
 
 .config-section {
@@ -393,12 +424,17 @@
 .pin-usage-summary h3 {
   margin: 0 0 12px 0;
   color: var(--accent-color);
-  font-size: 0.95rem;
+  font-size: 0.78rem;
   font-family: 'Consolas', 'Monaco', monospace;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   border-bottom: 1px solid var(--border-secondary);
   padding-bottom: 8px;
+  text-shadow: 0 0 10px rgba(0,255,255,0.3);
+}
+
+[data-theme="light"] .pin-usage-summary h3 {
+  text-shadow: none;
 }
 
 .empty-message {
@@ -597,11 +633,11 @@
 
 .neo-terminal-block {
   background: var(--bg-secondary);
-  border: 2px solid var(--border-color);
+  border: 1px solid var(--border-color);
   font-family: 'Consolas', 'Monaco', monospace;
   position: relative;
   min-width: 380px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--glow-cyan), 0 4px 16px rgba(0, 0, 0, 0.6);
 }
 
 /* Header */

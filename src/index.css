@@ -4,38 +4,39 @@
   box-sizing: border-box;
 }
 
-/* AutoCAD Electrical Style Theme */
+/* Neo Tool Suite — Dark/Light Theme */
 :root {
-  /* AutoCAD Dark Theme - Classic black background */
+  /* Dark theme — default */
   --bg-primary: #000000;
-  --bg-secondary: #1a1a1a;
-  --bg-tertiary: #2d2d2d;
-  
-  /* AutoCAD-style colors */
+  --bg-secondary: #0e0e0e;
+  --bg-tertiary: #1a1a1a;
+
   --border-color: #00ffff;
-  --border-secondary: #404040;
-  --border-tertiary: #606060;
-  
+  --border-secondary: #2a2a2a;
+  --border-tertiary: #3a3a3a;
+
   --text-primary: #ffffff;
-  --text-secondary: #cccccc;
-  --text-muted: #888888;
-  
-  /* AutoCAD accent colors */
+  --text-secondary: #aaaaaa;
+  --text-muted: #555555;
+
   --accent-color: #00ffff;
   --accent-hover: #33ffff;
   --accent-secondary: #ffff00;
-  
-  --shadow-color: rgba(0, 255, 255, 0.1);
-  --input-bg: #1a1a1a;
-  --input-border: #404040;
-  --card-bg: #1a1a1a;
-  
-  --error-bg: #3a1a1a;
+
+  --shadow-color: rgba(0, 255, 255, 0.08);
+  --glow-cyan: 0 0 18px rgba(0,255,255,0.18), 0 0 40px rgba(0,255,255,0.06);
+  --glow-yellow: 0 0 18px rgba(255,255,0,0.18), 0 0 40px rgba(255,255,0,0.06);
+
+  --input-bg: #0e0e0e;
+  --input-border: #2a2a2a;
+  --card-bg: #0e0e0e;
+
+  --error-bg: #1f0a0a;
   --error-color: #ff4444;
-  --error-hover: #4a1a1a;
-  --hover-bg: #2a3a3a;
-  
-  /* Wire colors - AutoCAD Electrical standard */
+  --error-hover: #2a0a0a;
+  --hover-bg: #0a1f1f;
+
+  /* Wire colors */
   --wire-red: #ff0000;
   --wire-blue: #0000ff;
   --wire-green: #00ff00;
@@ -47,37 +48,38 @@
   --wire-black: #000000;
   --wire-cyan: #00ffff;
   --wire-orange: #ffa500;
-  
-  /* Grid settings */
-  --grid-color: #333333;
-  --grid-dot-color: #404040;
+
+  --grid-color: #1a1a1a;
+  --grid-dot-color: #2a2a2a;
   --grid-size: 20px;
 }
 
-/* Light theme - technical drawing style */
+/* Light theme — clean technical blueprint */
 [data-theme="light"] {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f0f0f0;
-  --bg-tertiary: #e0e0e0;
-  --border-color: #0066cc;
-  --border-secondary: #cccccc;
-  --border-tertiary: #999999;
-  --text-primary: #000000;
-  --text-secondary: #333333;
-  --text-muted: #666666;
-  --accent-color: #0066cc;
-  --accent-hover: #0088ff;
-  --accent-secondary: #cc6600;
-  --shadow-color: rgba(0, 102, 204, 0.2);
+  --bg-primary: #f0f0f3;
+  --bg-secondary: #e4e4e9;
+  --bg-tertiary: #d2d2d9;
+  --border-color: #2563eb;
+  --border-secondary: #b8c9df;
+  --border-tertiary: #94a8bf;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --accent-color: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-secondary: #d97706;
+  --shadow-color: rgba(37, 99, 235, 0.12);
+  --glow-cyan: 0 0 12px rgba(37,99,235,0.12), 0 0 24px rgba(37,99,235,0.04);
+  --glow-yellow: 0 0 12px rgba(217,119,6,0.12), 0 0 24px rgba(217,119,6,0.04);
   --input-bg: #ffffff;
-  --input-border: #cccccc;
-  --card-bg: #f5f5f5;
-  --error-bg: #ffe5e5;
-  --error-color: #cc0000;
-  --error-hover: #ffcccc;
-  --hover-bg: #e5f0ff;
-  --grid-color: #dddddd;
-  --grid-dot-color: #cccccc;
+  --input-border: #94a8bf;
+  --card-bg: #f8f8fb;
+  --error-bg: #fef2f2;
+  --error-color: #dc2626;
+  --error-hover: #fee2e2;
+  --hover-bg: #dbeafe;
+  --grid-color: #d0d0d8;
+  --grid-dot-color: #c0c0ca;
 }
 
 body {
@@ -125,94 +127,110 @@ code {
     monospace;
 }
 
-/* Main Navigation - AutoCAD style */
+/* Navigation */
 .main-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
+  padding: 0 24px;
   height: 50px;
   background: var(--bg-secondary);
-  border-bottom: 2px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 1px 0 var(--border-color), 0 4px 24px rgba(0,0,0,0.6);
   transition: background 0.3s ease, border-color 0.3s ease;
+  position: relative;
+  z-index: 100;
+}
+
+[data-theme="light"] .main-nav {
+  box-shadow: 0 1px 0 var(--border-color), 0 4px 16px rgba(37,99,235,0.1);
 }
 
 .nav-brand {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--accent-color);
   font-family: 'Consolas', 'Monaco', monospace;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 3px;
+  text-shadow: 0 0 16px rgba(0,255,255,0.4);
+}
+
+[data-theme="light"] .nav-brand {
+  text-shadow: none;
 }
 
 .nav-links {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
 }
 
 .nav-link {
-  padding: 6px 16px;
-  color: var(--text-primary);
+  padding: 5px 14px;
+  color: var(--text-secondary);
   text-decoration: none;
   border: 1px solid var(--border-secondary);
-  background: var(--bg-primary);
+  background: transparent;
   transition: all 0.2s ease;
-  font-weight: 500;
-  font-size: 0.9rem;
+  font-weight: 600;
+  font-size: 0.78rem;
   text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-family: 'Consolas', 'Monaco', monospace;
 }
 
 .nav-link:hover {
   background: var(--hover-bg);
   border-color: var(--accent-color);
   color: var(--accent-color);
+  box-shadow: 0 0 10px rgba(0,255,255,0.12);
+}
+
+[data-theme="light"] .nav-link:hover {
+  box-shadow: 0 0 8px rgba(37,99,235,0.15);
 }
 
 .nav-link.active {
   background: var(--accent-color);
   color: var(--bg-primary);
   border-color: var(--accent-color);
+  box-shadow: var(--glow-cyan);
+  font-weight: 700;
 }
 
 /* Theme Toggle Button */
 .theme-toggle {
-  padding: 6px 12px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
+  padding: 5px 11px;
+  background: transparent;
+  border: 1px solid var(--border-secondary);
   color: var(--accent-color);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.9rem;
   transition: all 0.2s ease;
 }
 
 .theme-toggle:hover {
   background: var(--accent-color);
   color: var(--bg-primary);
+  box-shadow: var(--glow-cyan);
 }
 
-/* React Flow AutoCAD Grid Styling */
-.react-flow__container {
-  background-color: var(--bg-primary);
-}
-
-/* Clean black background - no grid */
+/* React Flow */
+.react-flow__container,
 .react-flow__background {
   background-color: var(--bg-primary);
 }
 
-/* Selection styling - AutoCAD style */
 .react-flow__selection {
-  background: rgba(0, 255, 255, 0.1);
+  background: rgba(0, 255, 255, 0.06);
   border: 1px solid var(--accent-color);
 }
 
 .react-flow__node.selected {
-  box-shadow: 0 0 0 2px var(--accent-color);
+  box-shadow: 0 0 0 2px var(--accent-color), var(--glow-cyan);
 }
 
-/* Edge (wire) styling */
 .react-flow__edge-path {
   stroke-width: 2;
 }
@@ -222,17 +240,18 @@ code {
   stroke-width: 3;
 }
 
-/* Controls styling - AutoCAD toolbar look */
 .react-flow__controls {
   background: var(--bg-secondary);
   border: 1px solid var(--border-secondary);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  border-radius: 0;
 }
 
 .react-flow__controls-button {
   background: var(--bg-secondary);
   color: var(--text-primary);
   border-bottom: 1px solid var(--border-secondary);
+  border-radius: 0;
 }
 
 .react-flow__controls-button:hover {
@@ -240,19 +259,34 @@ code {
 }
 
 .react-flow__controls-button path {
-  fill: var(--text-primary);
+  fill: var(--accent-color);
 }
 
-/* Minimap styling */
 .react-flow__minimap {
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-secondary);
+  border-radius: 0;
 }
 
-/* Attribution */
 .react-flow__attribution {
   background: var(--bg-secondary);
   color: var(--text-muted);
   border-top: 1px solid var(--border-secondary);
   font-size: 10px;
+}
+
+.react-flow__edge-path {
+  filter: drop-shadow(0 0 3px currentColor);
+}
+
+.react-flow__handle {
+  border-radius: 50%;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border-color) !important;
+  box-shadow: 0 0 6px var(--shadow-color);
+}
+
+.react-flow__handle:hover {
+  box-shadow: 0 0 10px var(--accent-color);
 }

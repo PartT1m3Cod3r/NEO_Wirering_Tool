@@ -1,4 +1,4 @@
-/* AutoCAD Electrical Style - Network Designer Page */
+/* Network Designer Page */
 
 .network-designer-page {
   display: flex;
@@ -19,38 +19,48 @@
   width: 220px;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border-secondary);
-  padding: 12px;
+  padding: 14px;
   overflow-y: auto;
 }
 
 .network-palette h3 {
   margin: 0 0 12px 0;
   color: var(--accent-color);
-  font-size: 0.95rem;
+  font-size: 0.78rem;
   font-family: 'Consolas', 'Monaco', monospace;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   border-bottom: 1px solid var(--border-secondary);
   padding-bottom: 8px;
+  text-shadow: 0 0 10px rgba(0,255,255,0.3);
+}
+
+[data-theme="light"] .network-palette h3 {
+  text-shadow: none;
 }
 
 .palette-btn {
   width: 100%;
-  padding: 10px;
-  margin-bottom: 8px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-secondary);
+  color: var(--text-secondary);
   font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 12px;
+  font-size: 0.78rem;
   text-transform: uppercase;
+  letter-spacing: 1px;
   cursor: pointer;
   transition: all 0.15s ease;
+  text-align: left;
 }
 
 .palette-btn:hover {
   background: var(--hover-bg);
   border-color: var(--accent-color);
+  color: var(--accent-color);
+  box-shadow: inset 2px 0 0 var(--accent-color);
+  transform: translateX(2px);
 }
 
 .palette-btn:active {
@@ -97,7 +107,7 @@
   width: 320px;
   background: var(--bg-secondary);
   border-left: 1px solid var(--border-secondary);
-  padding: 12px;
+  padding: 14px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -106,12 +116,17 @@
 .config-panel h3 {
   margin: 0 0 12px 0;
   color: var(--accent-color);
-  font-size: 0.95rem;
+  font-size: 0.78rem;
   font-family: 'Consolas', 'Monaco', monospace;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   border-bottom: 1px solid var(--border-secondary);
   padding-bottom: 8px;
+  text-shadow: 0 0 10px rgba(0,255,255,0.3);
+}
+
+[data-theme="light"] .config-panel h3 {
+  text-shadow: none;
 }
 
 .config-section {

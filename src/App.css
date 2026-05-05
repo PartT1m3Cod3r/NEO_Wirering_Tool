@@ -17,32 +17,55 @@ body {
 }
 
 .app {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 24px;
 }
 
 .app-header {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 30px;
-  margin-bottom: 30px;
-  box-shadow: 0 8px 32px var(--shadow-color);
+  border-radius: 0;
+  padding: 28px 30px;
+  margin-bottom: 24px;
+  box-shadow: var(--glow-cyan), 0 4px 24px rgba(0,0,0,0.5);
   text-align: center;
   transition: background-color 0.3s ease, border-color 0.3s ease;
+  position: relative;
+}
+
+.app-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(0,255,255,0.04) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+[data-theme="light"] .app-header::before {
+  background: radial-gradient(ellipse at 50% 0%, rgba(37,99,235,0.04) 0%, transparent 70%);
 }
 
 .app-header h1 {
   color: var(--accent-color);
-  font-size: 2.5em;
-  margin-bottom: 10px;
+  font-size: 2rem;
+  margin-bottom: 8px;
   font-weight: 700;
+  font-family: 'Consolas', 'Monaco', monospace;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  text-shadow: 0 0 20px rgba(0,255,255,0.4);
+}
+
+[data-theme="light"] .app-header h1 {
+  text-shadow: none;
 }
 
 .app-header p {
   color: var(--text-secondary);
-  font-size: 1.1em;
+  font-size: 0.9em;
+  font-family: 'Consolas', 'Monaco', monospace;
+  letter-spacing: 1px;
 }
 
 .controls {
@@ -54,31 +77,40 @@ body {
 
 .dropdown-group {
   background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 8px 32px var(--shadow-color);
+  border: 1px solid var(--border-secondary);
+  border-radius: 0;
+  padding: 18px 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
   transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.dropdown-group:hover {
+  border-color: var(--accent-color);
+  box-shadow: var(--glow-cyan);
 }
 
 .dropdown-group label {
   display: block;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--accent-color);
   margin-bottom: 10px;
-  font-size: 1.1em;
+  font-size: 0.8rem;
+  font-family: 'Consolas', 'Monaco', monospace;
+  text-transform: uppercase;
+  letter-spacing: 2px;
 }
 
 select {
   width: 100%;
-  padding: 12px;
-  font-size: 16px;
-  border: 2px solid var(--input-border);
-  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  border: 1px solid var(--input-border);
+  border-radius: 0;
   background-color: var(--input-bg);
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  font-family: 'Consolas', 'Monaco', monospace;
 }
 
 select:hover {
@@ -88,21 +120,21 @@ select:hover {
 select:focus {
   outline: none;
   border-color: var(--accent-color);
-  box-shadow: 0 0 0 3px var(--shadow-color);
+  box-shadow: 0 0 0 1px var(--accent-color);
 }
 
 select:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .plug-display-container {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 30px;
-  margin-bottom: 30px;
-  box-shadow: 0 8px 32px var(--shadow-color);
+  border-radius: 0;
+  padding: 28px 30px;
+  margin-bottom: 24px;
+  box-shadow: var(--glow-cyan), 0 4px 20px rgba(0,0,0,0.4);
   transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
@@ -116,33 +148,37 @@ select:disabled {
 .plug {
   max-width: 600px;
   margin: 0 auto;
-  border: 3px solid var(--border-secondary);
-  border-radius: 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--glow-cyan), 0 4px 20px rgba(0,0,0,0.5);
 }
 
 .plug-header {
-  background: var(--border-secondary);
-  color: var(--text-primary);
-  padding: 15px;
+  background: var(--accent-color);
+  color: var(--bg-primary);
+  padding: 12px 15px;
   text-align: center;
-  font-weight: 600;
-  font-size: 1.2em;
+  font-weight: 700;
+  font-size: 0.85rem;
+  font-family: 'Consolas', 'Monaco', monospace;
+  text-transform: uppercase;
+  letter-spacing: 2px;
 }
 
 .pin-row {
   display: grid;
   grid-template-columns: 60px 120px 1fr;
   align-items: center;
-  padding: 15px;
+  padding: 14px 15px;
   border-bottom: 1px solid var(--border-secondary);
   background: var(--bg-secondary);
-  transition: background 0.2s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .pin-row:hover {
-  background: var(--border-secondary);
+  background: var(--hover-bg);
+  border-color: var(--accent-color);
 }
 
 .pin-number {
@@ -152,7 +188,7 @@ select:disabled {
   text-align: center;
   padding: 8px;
   background: var(--bg-tertiary);
-  border-radius: 4px;
+  border-radius: 0;
   border: 1px solid var(--border-secondary);
 }
 
@@ -161,7 +197,7 @@ select:disabled {
   font-weight: 600;
   padding: 10px 15px;
   text-align: center;
-  border-radius: 6px;
+  border-radius: 0;
   margin: 0 10px;
   min-width: 100px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
@@ -177,11 +213,11 @@ select:disabled {
 
 .legend {
   background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 25px;
-  margin-bottom: 30px;
-  box-shadow: 0 8px 32px var(--shadow-color);
+  border: 1px solid var(--border-secondary);
+  border-radius: 0;
+  padding: 22px 25px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
   transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
@@ -224,7 +260,7 @@ select:disabled {
 .wiring-diagram-container {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 0;
   padding: 30px;
   margin-bottom: 30px;
   box-shadow: 0 8px 32px var(--shadow-color);
@@ -251,7 +287,7 @@ select:disabled {
 .external-device {
   background: var(--bg-secondary);
   border: 2px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 0;
   padding: 20px;
   min-width: 200px;
   box-shadow: 0 4px 12px var(--shadow-color);
@@ -273,7 +309,7 @@ select:disabled {
 
 .pin {
   padding: 12px;
-  border-radius: 8px;
+  border-radius: 0;
   text-align: center;
   font-weight: 600;
   color: var(--bg-secondary);
@@ -293,7 +329,7 @@ select:disabled {
 
 .wire {
   padding: 8px 15px;
-  border-radius: 20px;
+  border-radius: 0;
   color: #1a1a2e;
   font-weight: 600;
   text-align: center;
@@ -335,7 +371,7 @@ select:disabled {
 .wire-connector {
   background: var(--border-secondary);
   border: 2px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: 0;
   padding: 10px;
   min-width: 80px;
   text-align: center;
@@ -346,7 +382,7 @@ select:disabled {
 
 .sensor-body {
   background: var(--text-primary);
-  border-radius: 20px;
+  border-radius: 0;
   padding: 15px;
   margin: 10px 0;
 }
@@ -354,7 +390,7 @@ select:disabled {
 .connection-instructions {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 0;
   padding: 25px;
   margin-top: 30px;
 }
@@ -385,7 +421,7 @@ select:disabled {
   padding: 40px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-secondary);
-  border-radius: 12px;
+  border-radius: 0;
   color: var(--text-secondary);
   font-size: 1.1em;
 }
@@ -396,7 +432,7 @@ select:disabled {
   height: 500px;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 0;
   overflow: hidden;
 }
 
@@ -407,7 +443,7 @@ select:disabled {
   height: 500px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-secondary);
-  border-radius: 12px;
+  border-radius: 0;
   color: var(--text-secondary);
   font-size: 1.2em;
 }
@@ -418,7 +454,7 @@ select:disabled {
 .relay-node {
   background: var(--bg-secondary);
   border: 2px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 0;
   padding: 10px;
   min-width: 220px;
   box-shadow: 0 4px 20px var(--shadow-color);
@@ -439,7 +475,7 @@ select:disabled {
 .react-flow__controls {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 0;
   overflow: hidden;
 }
 
@@ -462,7 +498,7 @@ select:disabled {
 .react-flow__minimap {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 0;
 }
 
 .react-flow__attribution {
@@ -524,7 +560,7 @@ select:disabled {
   padding: 20px;
   color: var(--text-primary);
   background: var(--bg-secondary);
-  border-radius: 12px;
+  border-radius: 0;
   margin-top: 20px;
 }
 

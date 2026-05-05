@@ -24,7 +24,7 @@ const pinDefinitions = {
     { pin: 8, color: 'red', colorHex: colorMap.red, function: 'Actuator Output 4', textColor: '#FFF' },
   ],
   communications: [
-    { pin: 1, color: 'white', colorHex: colorMap.white, function: 'Solar Input (5 to 24V)', textColor: '#000' },
+    { pin: 1, color: 'white', colorHex: colorMap.white, function: 'Power Input (5 to 24V)', textColor: '#000' },
     { pin: 2, color: 'brown', colorHex: colorMap.brown, function: 'Ground', textColor: '#FFF' },
     { pin: 3, color: 'green', colorHex: colorMap.green, function: 'RS485 B', textColor: '#000' },
     { pin: 4, color: 'yellow', colorHex: colorMap.yellow, function: 'RS485 A', textColor: '#000' },

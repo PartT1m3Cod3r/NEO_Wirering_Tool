@@ -40,6 +40,7 @@ export const ReactFlowDiagram = ({ plugType, typeData, outputNumber, channelNumb
         position: { x: 100, y: 100 },
         data: {
           label: 'Neo Device',
+          plugType: plugType,
           outputs: []
         },
       };

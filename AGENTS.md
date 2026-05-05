@@ -2,14 +2,16 @@
 
 ## Project Overview
 
-A React-based PWA (Progressive Web App) for visualizing and designing wiring configurations for Aquamonix Neo IoT devices. The app provides two primary workflows:
+A React-based PWA (Progressive Web App) for visualizing and designing wiring configurations and network topologies for Aquamonix Neo IoT devices. The app provides three primary workflows:
 
-1. **Wiring Lookup** (`/`) — Quick reference tool for pin configurations based on plug type and device selection. Shows interactive pin tables, color legends, and ReactFlow wiring diagrams for a single device.
-2. **System Wiring** (`/system`) — Interactive diagram designer for complete system layouts. Users can add multiple devices, configure channels/outputs, and export BOMs, wiring schedules, and PDF reports.
+1. **Landing Page** (`/`) — Entry point with navigation cards to all tools.
+2. **Wiring Lookup** (`/wiring`) — Quick reference tool for pin configurations based on plug type and device selection. Shows interactive pin tables, color legends, and ReactFlow wiring diagrams for a single device.
+3. **System Wiring** (`/system`) — Interactive diagram designer for complete system layouts. Users can add multiple devices, configure channels/outputs, and export BOMs, wiring schedules, and PDF reports.
+4. **Network Designer** (`/network`) — Topology designer for multi-NEO CoreLink networks. Users can place NEO devices and base stations, connect them with distance/LOS links, configure WiFi/LTE RSSI values, and receive signal-quality recommendations.
 
 The visual design follows an **AutoCAD Electrical** aesthetic: dark theme by default (black backgrounds, cyan accents), monospace fonts (`Consolas`, `Monaco`), IEC-style schematic symbols, and wire number labels.
 
-The current application version is **1.2.1** (declared in `index.html` meta tag).
+The current application version is **1.3.0** (declared in `index.html` meta tag).
 
 A hardware reference manual (`NEO_Hardware_Manual.md`) is also present in the repository with full connector pinouts and installation instructions.
 
@@ -22,7 +24,7 @@ A hardware reference manual (`NEO_Hardware_Manual.md`) is also present in the re
 | Vite | ^7.2.4 | Build tool & dev server |
 | @vitejs/plugin-react-swc | ^4.2.2 | Fast JSX transform (SWC) |
 | ReactFlow | ^11.11.4 | Interactive node-based diagrams |
-| react-router-dom | ^7.13.0 | Client-side routing (`/`, `/system`) |
+| react-router-dom | ^7.13.0 | Client-side routing (`/`, `/wiring`, `/system`, `/network`) |
 | html-to-image | ^1.11.13 | PNG/SVG export of diagrams |
 | jspdf | ^4.1.0 | PDF report generation |
 | jspdf-autotable | ^5.0.7 | PDF table rendering |
@@ -57,6 +59,16 @@ src/
 │   │   ├── NeoDeviceNode.jsx       # Neo M12 connector (terminal block table, 8 pins, dynamic handles)
 │   │   ├── RelayNode.jsx           # Standard relay (IEC coil symbol)
 │   │   └── SensorNode.jsx          # Generic sensor/comm device (IEC symbol per type)
+│   ├── network/
+│   │   └── RssiRecommendations.jsx # Network Designer: RSSI-based recommendation panel
+│   ├── nodes/
+│   │   ├── BaseStationNode.jsx     # Base station node (antenna symbol, RSSI display)
+│   │   ├── BatteryNode.jsx         # Power supply node (DC symbol, source handles)
+│   │   ├── LatchingRelayNode.jsx   # Latching relay with SET/RESET coils
+│   │   ├── NeoDeviceNode.jsx       # Neo M12 connector (terminal block table, 8 pins, dynamic handles)
+│   │   ├── NeoNetworkNode.jsx      # NEO device node for Network Designer (CoreLink symbol)
+│   │   ├── RelayNode.jsx           # Standard relay (IEC coil symbol)
+│   │   └── SensorNode.jsx          # Generic sensor/comm device (IEC symbol per type)
 │   ├── system/
 │   │   ├── DeviceConfigPanel.jsx   # Right sidebar: edit name, channel, output, wire mode, wire numbers
 │   │   ├── DevicePalette.jsx       # Left sidebar: click-to-add device categories
@@ -69,9 +81,14 @@ src/
 ├── data/
 │   └── plugData.js                 # Pin configurations, colors, device info for all plug types
 ├── pages/
+│   ├── LandingPage.jsx             # Landing page with tool cards
+│   ├── LandingPage.css             # Landing page styles
+│   ├── NetworkDesigner.jsx         # Network topology designer (CoreLink, RSSI, LOS)
+│   ├── NetworkDesigner.css         # AutoCAD styles for network designer
 │   ├── SystemWiring.jsx            # Main system designer page (ReactFlow canvas, export logic)
 │   └── SystemWiring.css            # AutoCAD-style styles for system page
-├── utils/                          # Empty directory (reserved for future helpers)
+├── utils/
+│   └── rssiLogic.js                # Pure helpers: WiFi/LTE RSSI thresholds & recommendations
 ├── App.jsx                         # Wiring Lookup page
 ├── App.css                         # Wiring Lookup styles + ReactFlow overrides
 ├── index.css                       # CSS variables for theming, global AutoCAD styles
@@ -85,13 +102,15 @@ Configured in `main.jsx` via `react-router-dom`:
 ```jsx
 <BrowserRouter>
   <Routes>
-    <Route path="/" element={<Layout><App /></Layout>} />
+    <Route path="/" element={<Layout><LandingPage /></Layout>} />
+    <Route path="/wiring" element={<Layout><App /></Layout>} />
     <Route path="/system" element={<Layout><SystemWiring /></Layout>} />
+    <Route path="/network" element={<Layout><NetworkDesigner /></Layout>} />
   </Routes>
 </BrowserRouter>
 ```
 
-Both routes share a common `Layout` with the `Navigation` component (brand, route links, theme toggle ☀️/🌙).
+All routes share a common `Layout` with the `Navigation` component (brand, route links, theme toggle ☀️/🌙).
 
 ## Data Architecture
 
@@ -104,6 +123,53 @@ Both routes share a common `Layout` with the `Navigation` component (brand, rout
 - **`connectedDevices`** is the **single source of truth** (array of device objects).
 - **Nodes and edges** are derived from `connectedDevices` via `useEffect`. This allows save/load as simple JSON.
 - Pure helper functions (`getUsedPins`, `getDeviceTerminals`, `createEdgesForDevice`, `findNextAvailable`, `generateDefaultWireNumber`) are defined **outside the component** to avoid React hook ordering issues (TDZ errors in production builds).
+
+### Network Designer (`NetworkDesigner.jsx`)
+- **`networkDevices`** and **`networkLinks`** are the **dual source of truth**.
+- **Nodes** are derived from `networkDevices` + `nodePositionsRef` (preserves dragged positions).
+- **Edges** are derived from `networkLinks` and rendered as `coloredWire` type edges (reusing `ColoredWireEdge` from System Wiring).
+- Users draw connections via React Flow's built-in `onConnect` handler; new links default to `distance: 100` and `los: true`.
+- Pure helper functions (`getDistanceColor`, `getDefaultPosition`) are defined **outside the component**.
+
+#### Network Device Object Schema
+```javascript
+{
+  id: 'network-node-1234567890',
+  type: 'neo',              // 'neo' or 'baseStation'
+  label: 'NEO-01',
+  neoId: '',                // physical device ID (neo only)
+  wifiRssi: -50,            // dBm (baseStation only)
+  lteRssi: -90,             // dBm (baseStation only)
+}
+```
+
+#### Network Link Object Schema
+```javascript
+{
+  id: 'network-link-1234567890',
+  source: 'network-node-xxx',
+  target: 'network-node-yyy',
+  distance: 100,            // meters
+  los: true,                // line of sight
+}
+```
+
+#### RSSI Thresholds
+| WiFi RSSI | Level | Color |
+|---|---|---|
+| ≥ -50 dBm | Excellent | `#00ff00` |
+| -50 to -60 | Good | `#ccff00` |
+| -60 to -70 | Fair | `#ffff00` |
+| -70 to -80 | Poor | `#ff8800` |
+| < -80 | Very Poor | `#ff4444` |
+
+| LTE RSSI | Level | Color |
+|---|---|---|
+| ≥ -80 dBm | Excellent | `#00ff00` |
+| -80 to -90 | Good | `#ccff00` |
+| -90 to -100 | Fair | `#ffff00` |
+| -100 to -110 | Poor | `#ff8800` |
+| < -110 | Very Poor | `#ff4444` |
 
 #### Device Object Schema
 ```javascript
@@ -180,6 +246,13 @@ Registered in `SystemWiring.jsx`:
 | `latchingRelay` | `LatchingRelayNode` | Latching relays |
 | `battery` | `BatteryNode` | Power supply / battery nodes |
 
+Registered in `NetworkDesigner.jsx`:
+
+| Type | Component | Used For |
+|---|---|---|
+| `neoNetwork` | `NeoNetworkNode` | NEO devices in CoreLink topology |
+| `baseStation` | `BaseStationNode` | Base stations / gateways with RSSI display |
+
 ## Edge Types
 
 - **`coloredWire`** (`ColoredWireEdge.jsx`): Custom ReactFlow edge featuring:
@@ -189,6 +262,13 @@ Registered in `SystemWiring.jsx`:
   - ArrowClosed markers colored to match the cable
   - Theme-aware styling (white wires get black borders in light mode)
   - Small vertical offset per wire color so parallel cables do not perfectly overlap
+
+- **`coloredWire`** (`ColoredWireEdge.jsx`): Reused in Network Designer for network topology links. Features:
+  - Orthogonal path routing (same as System Wiring)
+  - Distance-based stroke colors (green → yellow → orange → red)
+  - Background-colored outline for visibility
+  - AutoCAD-style labels with distance and optional "NO LOS" warning
+  - ArrowClosed markers colored to match the link quality
 
 ## Features Implemented
 
@@ -245,6 +325,25 @@ Registered in `SystemWiring.jsx`:
   - `a` → `501`, `b` → `502`, `d0` → `601`, `d1` → `602`, `data` → `701`
 - Stored in `device.wireNumbers` object.
 
+### Network Designer
+- Interactive ReactFlow canvas for designing CoreLink network topologies.
+- **Node types**: `neoNetwork` (NEO device) and `baseStation` (gateway with RSSI inputs).
+- **Edge type**: `coloredWire` (reusing `ColoredWireEdge`) with distance (meters) and LOS (line of sight) properties.
+- Users draw connections between nodes; new links default to `distance: 100` and `los: true`.
+- Config panel allows editing device labels, NEO IDs, WiFi/LTE RSSI values, link distance, and LOS toggle.
+- **RSSI Recommendations**: `RssiRecommendations` panel evaluates all base station RSSI values and network links, generating color-coded success/warning/error recommendations.
+- Pure helper `getNetworkRecommendations()` in `src/utils/rssiLogic.js` provides threshold-based analysis.
+
+### Image Export (Network Designer)
+- Uses `html-to-image` `toSvg()` to capture the ReactFlow canvas.
+- Hides UI overlays during capture.
+- Converts SVG to PNG via canvas at 2x scale.
+- Download filename: `neo_network_design.png`.
+
+### Save / Load Design (Network Designer)
+- JSON export/import of `networkDevices` + `networkLinks` + `nodePositions`.
+- File format: `{ devices: [], links: [], positions: {} }`.
+
 ## Code Style Guidelines
 
 - **ES Modules** throughout (`"type": "module"` in `package.json`).
@@ -275,10 +374,17 @@ There is **no automated test suite** currently in the project. No Jest, Vitest, 
 - [ ] Test 2-wire mode (GND hidden)
 - [ ] Test 3-wire mode (GND shown)
 - [ ] Test pin conflict detection
-- [ ] Test save/load design (JSON)
-- [ ] Test CSV export
-- [ ] Test PDF export
+- [ ] Test save/load design (JSON) - System Wiring
+- [ ] Test CSV export - System Wiring
+- [ ] Test PDF export - System Wiring
 - [ ] Test all device types: 0-10V, 4-20mA, voltage-sensing, relay, latching, transistor, RS485, Wiegand, SDI-12, pulse counter, power-input
+- [ ] Test landing page navigation cards
+- [ ] Test Network Designer: add NEO devices and base stations
+- [ ] Test Network Designer: draw connections between nodes
+- [ ] Test Network Designer: edit distance and LOS on links
+- [ ] Test Network Designer: edit WiFi/LTE RSSI and verify recommendations
+- [ ] Test Network Designer: save/load JSON
+- [ ] Test Network Designer: export PNG and CSV
 - [ ] Test on mobile (PWA installability)
 
 ## Deployment
@@ -302,12 +408,19 @@ npx serve -s dist  # Serve the static build
 
 ## Adding a New Device Type
 
+### System Wiring
 1. Add the device template to `availableDevices` in `SystemWiring.jsx`.
 2. Add pin mapping in `getUsedPins()` in `SystemWiring.jsx`.
 3. Add terminal config in `getDeviceTerminals()` in `SystemWiring.jsx`.
 4. Add edge creation logic in `createEdgesForDevice()` in `SystemWiring.jsx`.
 5. If needed, add a new node component and register it in the `nodeTypes` object.
 6. Update `plugData.js` if the device should also appear in Wiring Lookup.
+
+### Network Designer
+1. Add the device template to the palette buttons in `NetworkDesigner.jsx`.
+2. If a new visual node type is needed, create the component in `src/components/nodes/` and register it in the `nodeTypes` object.
+3. Update `getDefaultPosition()` if the new type needs special initial positioning.
+4. Update the config panel logic to handle any new data fields.
 
 ## Security Considerations
 
@@ -317,6 +430,6 @@ npx serve -s dist  # Serve the static build
 
 ## Contact / Context
 
-- **Purpose:** Tool for Aquamonix Neo device wiring configuration.
+- **Purpose:** Tool for Aquamonix Neo device wiring configuration and CoreLink network design.
 - **Built by:** Robert Steere
 - **GitHub:** https://github.com/PartT1m3Cod3r/NEO_Wirering_Tool
